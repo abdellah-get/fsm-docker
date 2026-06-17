@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, use } from "react";
 import { createClient } from "../../../../../utils/supabase/client";
 import { Printer, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
-// 💡 1. IMPORT DU ROUTEUR NEXT.JS
-import { useRouter } from "next/navigation";
+// 💡 1. IMPORT DE LINK POUR UNE NAVIGATION SÉCURISÉE (Remplace useRouter)
+import Link from "next/link";
 
 // Définition des interfaces pour typer strictement les données
 interface ClientRelation {
@@ -31,7 +31,6 @@ interface InterventionBonData {
   description: string | null;
   statut: string;
   date_prevue: string;
-  // 💡 2. AJOUT DES CHAMPS DE SIGNATURE
   signature_client: string | null;
   signature_technicien: string | null;
   clients: ClientRelation | null;
@@ -47,8 +46,6 @@ interface BonInterventionProps {
 
 export default function BonInterventionPage({ params }: BonInterventionProps) {
   const supabase = createClient();
-  // 💡 3. INITIALISATION DU ROUTEUR
-  const router = useRouter();
 
   const unwrappedParams = use(params);
   const id = unwrappedParams.id;
@@ -57,10 +54,31 @@ export default function BonInterventionPage({ params }: BonInterventionProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 💡 2. STATE POUR L'URL DE RETOUR DYNAMIQUE
+  const [backUrl, setBackUrl] = useState<string>("/dashboard");
+
   const fetchBonData = useCallback(async () => {
     try {
       setLoading(true);
 
+      // 💡 3. IDENTIFICATION DU RÔLE DE L'UTILISATEUR CONNECTÉ
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { data: currentUser } = await supabase
+          .from("utilisateurs")
+          .select("role")
+          .eq("id", authData.user.id)
+          .single();
+
+        // Définition de l'URL de retour selon le rôle
+        if (currentUser?.role === "TECHNICIEN") {
+          setBackUrl("/dashboard/mes-interventions");
+        } else {
+          setBackUrl("/dashboard/interventions");
+        }
+      }
+
+      // Récupération des données du bon d'intervention
       const { data: intervention, error: interError } = await supabase
         .from("interventions")
         .select(
@@ -110,12 +128,13 @@ export default function BonInterventionPage({ params }: BonInterventionProps) {
     return (
       <div className="p-8 text-center text-red-500">
         <p>Erreur: {error || "Document indisponible"}</p>
-        <button
-          onClick={() => router.back()}
+        {/* 💡 4. UTILISATION DE LINK POUR GÉRER LE RETOUR LORS DES ERREURS */}
+        <Link
+          href={backUrl}
           className="text-emerald-600 underline mt-4 inline-block bg-transparent border-none cursor-pointer"
         >
-          Retour à la page précédente
-        </button>
+          Retour à la liste
+        </Link>
       </div>
     );
   }
@@ -123,13 +142,13 @@ export default function BonInterventionPage({ params }: BonInterventionProps) {
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-8 font-sans text-gray-900">
       <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
-        {/* 💡 4. BOUTON RETOUR DYNAMIQUE */}
-        <button
-          onClick={() => router.back()}
+        {/* 💡 5. UTILISATION DE LINK POUR LE BOUTON RETOUR PRINCIPAL */}
+        <Link
+          href={backUrl}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors bg-transparent border-none cursor-pointer font-medium"
         >
           <ArrowLeft className="w-4 h-4" /> Retour
-        </button>
+        </Link>
         <button
           onClick={handlePrint}
           className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg shadow-sm font-medium transition-colors"
@@ -143,7 +162,7 @@ export default function BonInterventionPage({ params }: BonInterventionProps) {
         <div className="flex justify-between items-start border-b border-gray-200 pb-8 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">
-              Bon de intervention
+              Bon intervention
             </h1>
             <p className="text-gray-500 mt-1 font-mono text-sm">
               Réf: BI-{data.id.split("-")[0].toUpperCase()}
@@ -228,7 +247,6 @@ export default function BonInterventionPage({ params }: BonInterventionProps) {
           </div>
         </div>
 
-        {/* 💡 5. AFFICHAGE CONDITIONNEL DES SIGNATURES */}
         <div className="grid grid-cols-2 gap-12 pt-8 mt-16 border-t border-gray-200">
           <div className="text-center">
             <h3 className="font-bold text-gray-900 mb-6">

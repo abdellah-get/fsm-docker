@@ -64,28 +64,41 @@ export async function updateSession(request: NextRequest) {
     const role = profile?.role; // 'GERANT' ou 'TECHNICIEN'
 
     // Redirection intelligente depuis le login ou la racine du dashboard
-    if (currentPath === "/login" || currentPath === "/dashboard") {
+    // Redirection intelligente depuis le login UNIQUEMENT
+    if (currentPath === "/login") {
       const url = request.nextUrl.clone();
-      // Le gérant va sur ses interventions, le technicien va sur ses missions
       url.pathname =
-        role === "TECHNICIEN"
-          ? "/dashboard/mes-interventions"
-          : "/dashboard/interventions";
+        role === "TECHNICIEN" ? "/dashboard/mes-interventions" : "/dashboard"; // 👈 Le Gérant est envoyé sur l'accueil (ses statistiques)
+      return NextResponse.redirect(url);
+    }
+
+    // Sécurité supplémentaire : Si le technicien tente d'aller sur l'accueil global
+    if (role === "TECHNICIEN" && currentPath === "/dashboard") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard/mes-interventions";
       return NextResponse.redirect(url);
     }
 
     // MUR DE SÉCURITÉ : On bloque le Technicien s'il essaie d'aller sur l'espace Gérant
+    // MUR DE SÉCURITÉ : Contrôle d'accès strict pour le Technicien
     if (role === "TECHNICIEN") {
-      // Si le technicien tente d'afficher la liste complète des interventions du gérant
-      // (Mais on ne le bloque PAS s'il va sur un bon d'intervention spécifique)
-      if (currentPath === "/dashboard/interventions") {
+      // Si le technicien tente d'entrer dans le dossier "interventions" du gérant...
+      if (currentPath.startsWith("/dashboard/interventions")) {
+        // ... On L'AUTORISE uniquement s'il est sur un bon d'intervention.
+        // Sinon (ex: liste complète, création, etc.), on l'éjecte vers SON espace.
+        if (!currentPath.includes("/bon-intervention")) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/dashboard/mes-interventions";
+          return NextResponse.redirect(url);
+        }
+      }
+
+      // Bloquer l'accès à la gestion de l'équipe
+      if (currentPath.startsWith("/dashboard/equipe")) {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard/mes-interventions";
         return NextResponse.redirect(url);
       }
-
-      // Optionnel : Tu peux ajouter d'autres routes interdites au technicien ici
-      // if (currentPath.startsWith("/dashboard/clients")) { ... }
     }
   }
 

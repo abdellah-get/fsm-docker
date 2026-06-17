@@ -16,7 +16,7 @@ interface InterventionMobile {
   date_prevue: string;
   compte_rendu: string | null;
   clients: { nom_complet: string } | null;
-  signature_client_url?: string | null; // 💡 Ajout du champ pour l'URL de signature
+  signature_client: string | null; // 💡 Ajout du champ pour l'URL de signature
 }
 
 export default function MesInterventionsPage() {
@@ -56,7 +56,7 @@ export default function MesInterventionsPage() {
           .from("interventions")
           .select(
             `
-            id, titre, description, statut, date_prevue, compte_rendu, signature_client_url,
+            id, titre, description, statut, date_prevue, compte_rendu, signature_client,
             clients ( nom_complet )
             `,
           )
@@ -185,7 +185,7 @@ export default function MesInterventionsPage() {
         .update({
           statut: "CLOTUREE",
           compte_rendu: texteRapport,
-          signature_client_url: publicUrl,
+          signature_client: publicUrl,
         })
         .eq("id", selectedInterventionId);
 
@@ -199,7 +199,7 @@ export default function MesInterventionsPage() {
                 ...inv,
                 statut: "CLOTUREE",
                 compte_rendu: texteRapport,
-                signature_client_url: publicUrl,
+                signature_client: publicUrl,
               }
             : inv,
         ),

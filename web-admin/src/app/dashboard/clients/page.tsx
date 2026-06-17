@@ -294,7 +294,7 @@ export default function ClientsPage() {
                     className="hover:bg-gray-50 transition-colors group"
                   >
                     <td className="px-6 py-4 font-semibold text-gray-900 flex items-center gap-3">
-                      <div className="h-8 w-8 rounded bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold flex-shrink-0">
+                      <div className="h-8 w-8 rounded bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold shrink-0">
                         {client.nom_complet.charAt(0).toUpperCase()}
                       </div>
                       <span className="truncate">{client.nom_complet}</span>
