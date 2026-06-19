@@ -1,1 +1,787 @@
 @import "tailwindcss";
+
+/* ==========================================
+   🌙 THÈME SOMBRE - Variables CSS
+   ========================================== */
+
+:root {
+  /* Couleurs claires */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-hover: #f3f4f6;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --border-color: #e2e8f0;
+  --border-hover: #cbd5e1;
+
+  --shadow-color: rgba(0, 0, 0, 0.08);
+  --shadow-hover: rgba(0, 0, 0, 0.15);
+
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+
+  --radius: 0.75rem;
+  --transition: 0.3s ease;
+}
+
+.dark {
+  /* Couleurs sombres */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-hover: #334155;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  --border-color: #334155;
+  --border-hover: #475569;
+
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --shadow-hover: rgba(0, 0, 0, 0.6);
+
+  --card-bg: #1e293b;
+  --card-border: #334155;
+
+  --input-bg: #0f172a;
+  --input-border: #334155;
+}
+
+/* ==========================================
+   📦 APPLICATION DES VARIABLES
+   ========================================== */
+
+/* Fond et texte */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* ==========================================
+   🎨 STYLES GLOBAUX DES BOUTONS
+   ========================================== */
+
+/* 🟢 BOUTONS VERTS (Primary) */
+button[class*="bg-emerald-600"],
+button[class*="bg-emerald-700"],
+button[class*="bg-green-600"] {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(5, 150, 105, 0.25) !important;
+}
+
+button[class*="bg-emerald-600"]:hover,
+button[class*="bg-emerald-700"]:hover,
+button[class*="bg-green-600"]:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(5, 150, 105, 0.35) !important;
+}
+
+/* Mode sombre - Boutons verts */
+.dark button[class*="bg-emerald-600"],
+.dark button[class*="bg-emerald-700"],
+.dark button[class*="bg-green-600"] {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3) !important;
+}
+
+.dark button[class*="bg-emerald-600"]:hover,
+.dark button[class*="bg-emerald-700"]:hover,
+.dark button[class*="bg-green-600"]:hover {
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* ⚪ BOUTONS GRIS (Secondary) */
+button[class*="border-gray-300"],
+button[class*="bg-gray-100"] {
+  background: white !important;
+  color: #1f2937 !important;
+  border: 1.5px solid #d1d5db !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+}
+
+button[class*="border-gray-300"]:hover,
+button[class*="bg-gray-100"]:hover {
+  background: #f9fafb !important;
+  border-color: #9ca3af !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Mode sombre - Boutons gris */
+.dark button[class*="border-gray-300"],
+.dark button[class*="bg-gray-100"] {
+  background: #1e293b !important;
+  color: #e5e7eb !important;
+  border-color: #334155 !important;
+}
+
+.dark button[class*="border-gray-300"]:hover,
+.dark button[class*="bg-gray-100"]:hover {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+/* 🔴 BOUTONS ROUGES (Danger) */
+button[class*="bg-red-600"],
+button[class*="bg-red-500"] {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.25) !important;
+}
+
+button[class*="bg-red-600"]:hover,
+button[class*="bg-red-500"]:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35) !important;
+}
+
+/* Mode sombre - Boutons rouges */
+.dark button[class*="bg-red-600"],
+.dark button[class*="bg-red-500"] {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3) !important;
+}
+
+.dark button[class*="bg-red-600"]:hover,
+.dark button[class*="bg-red-500"]:hover {
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* 📝 BOUTONS ICÔNES (Modifier/Supprimer) */
+button[title*="Modifier"] {
+  color: #6b7280 !important;
+  transition: all 0.2s ease !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0.25rem !important;
+}
+
+button[title*="Modifier"]:hover {
+  color: #059669 !important;
+  transform: scale(1.15) !important;
+}
+
+.dark button[title*="Modifier"] {
+  color: #94a3b8 !important;
+}
+
+.dark button[title*="Modifier"]:hover {
+  color: #10b981 !important;
+}
+
+button[title*="Supprimer"] {
+  color: #6b7280 !important;
+  transition: all 0.2s ease !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0.25rem !important;
+}
+
+button[title*="Supprimer"]:hover {
+  color: #dc2626 !important;
+  transform: scale(1.15) !important;
+}
+
+.dark button[title*="Supprimer"] {
+  color: #94a3b8 !important;
+}
+
+.dark button[title*="Supprimer"]:hover {
+  color: #ef4444 !important;
+}
+
+/* 🔄 BOUTONS DÉSACTIVÉS */
+button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================
+   📱 RESPONSIVE
+   ========================================== */
+
+@media (max-width: 640px) {
+  button[class*="bg-emerald-600"],
+  button[class*="border-gray-300"],
+  button[class*="bg-red-600"] {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* ==========================================
+   🎨 HEADER ET NAVIGATION - LISIBILITÉ AMÉLIORÉE
+   ========================================== */
+
+/* Texte du header */
+header h1 {
+  color: #1f2937 !important;
+  font-weight: 600 !important;
+}
+
+.dark header h1 {
+  color: #e5e7eb !important;
+}
+
+/* Nom utilisateur dans le header */
+header .text-gray-600 {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+}
+
+.dark header .text-gray-600 {
+  color: #e5e7eb !important;
+}
+
+/* Liens de navigation */
+nav a {
+  color: #4b5563 !important;
+  transition: all 0.2s ease !important;
+}
+
+.dark nav a {
+  color: #9ca3af !important;
+}
+
+nav a:hover {
+  color: #111827 !important;
+  background-color: #f3f4f6 !important;
+}
+
+.dark nav a:hover {
+  color: #f1f5f9 !important;
+  background-color: #334155 !important;
+}
+
+/* Liens actifs */
+nav a[class*="bg-emerald-50"] {
+  color: #047857 !important;
+  background-color: #ecfdf5 !important;
+}
+
+.dark nav a[class*="bg-emerald-50"] {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* ==========================================
+   📝 CARTES ET TABLEAUX - LISIBILITÉ
+   ========================================== */
+
+/* En-têtes de tableaux */
+thead th {
+  color: #4b5563 !important;
+  font-weight: 600 !important;
+}
+
+.dark thead th {
+  color: #9ca3af !important;
+}
+
+/* Texte des tableaux */
+tbody td {
+  color: #1f2937 !important;
+}
+
+.dark tbody td {
+  color: #e5e7eb !important;
+}
+
+/* Noms des clients en gras */
+td .font-semibold {
+  color: #0f172a !important;
+}
+
+.dark td .font-semibold {
+  color: #f1f5f9 !important;
+}
+
+/* ==========================================
+   🎯 BOUTON THEME TOGGLE
+   ========================================== */
+
+.theme-toggle {
+  background: transparent !important;
+  border: 1px solid #e5e7eb !important;
+  color: #4b5563 !important;
+  padding: 0.5rem !important;
+  border-radius: 9999px !important;
+  transition: all 0.3s ease !important;
+}
+
+.dark .theme-toggle {
+  border-color: #334155 !important;
+  color: #9ca3af !important;
+}
+
+.theme-toggle:hover {
+  background: #f3f4f6 !important;
+  transform: scale(1.05) !important;
+}
+
+.dark .theme-toggle:hover {
+  background: #334155 !important;
+}
+
+/* ==========================================
+   🎯 CORRECTION URGENTE - LISIBILITÉ
+   ========================================== */
+
+/* 🌞 MODE CLAIR - Textes plus foncés */
+.text-gray-500 {
+  color: #4b5563 !important;
+}
+.text-gray-400 {
+  color: #6b7280 !important;
+}
+.text-gray-300 {
+  color: #9ca3af !important;
+}
+.text-gray-600 {
+  color: #374151 !important;
+}
+.text-gray-700 {
+  color: #1f2937 !important;
+}
+.text-gray-800 {
+  color: #111827 !important;
+}
+.text-gray-900 {
+  color: #0f172a !important;
+}
+
+/* 🌙 MODE SOMBRE - Textes plus clairs */
+.dark .text-gray-500 {
+  color: #9ca3af !important;
+}
+.dark .text-gray-400 {
+  color: #a1a1aa !important;
+}
+.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+.dark .text-gray-700 {
+  color: #e5e7eb !important;
+}
+.dark .text-gray-800 {
+  color: #f1f5f9 !important;
+}
+.dark .text-gray-900 {
+  color: #f8fafc !important;
+}
+
+/* 📝 TITRES ET EN-TÊTES */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #0f172a !important;
+}
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #f1f5f9 !important;
+}
+
+/* 📊 STATISTIQUES */
+.text-3xl {
+  color: #0f172a !important;
+}
+.dark .text-3xl {
+  color: #f1f5f9 !important;
+}
+
+/* 🏷️ LABELS */
+.text-sm.font-medium.text-gray-500 {
+  color: #4b5563 !important;
+}
+.dark .text-sm.font-medium.text-gray-500 {
+  color: #9ca3af !important;
+}
+
+/* 📋 TABLEAUX */
+tbody td {
+  color: #1f2937 !important;
+}
+.dark tbody td {
+  color: #e5e7eb !important;
+}
+thead th {
+  color: #4b5563 !important;
+}
+.dark thead th {
+  color: #9ca3af !important;
+}
+
+/* 🎨 CARTES */
+.bg-white .text-gray-500 {
+  color: #4b5563 !important;
+}
+.dark .bg-dark-800 .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+/* 🔍 RECHERCHE */
+input::placeholder {
+  color: #9ca3af !important;
+}
+.dark input::placeholder {
+  color: #64748b !important;
+}
+
+/* 📝 PARAGRAPHES */
+p.text-gray-500 {
+  color: #4b5563 !important;
+}
+.dark p.text-gray-500 {
+  color: #9ca3af !important;
+}
+
+p.text-gray-600 {
+  color: #374151 !important;
+}
+.dark p.text-gray-600 {
+  color: #d1d5db !important;
+}
+
+/* ==========================================
+   🎯 CORRECTION FINALE - SIDEBAR & HEADER
+   ========================================== */
+
+/* HEADER - "Espace Direction Gérant" */
+header h1,
+header .text-gray-500,
+header .text-sm.font-semibold.text-gray-500 {
+  color: #1f2937 !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+.dark header h1,
+.dark header .text-gray-500,
+.dark header .text-sm.font-semibold.text-gray-500 {
+  color: #f1f5f9 !important;
+}
+
+/* SIDEBAR - Tous les liens */
+nav a {
+  color: #374151 !important;
+  font-weight: 500 !important;
+}
+.dark nav a {
+  color: #d1d5db !important;
+}
+nav a:hover {
+  color: #0f172a !important;
+  background-color: #f3f4f6 !important;
+}
+.dark nav a:hover {
+  color: #f1f5f9 !important;
+  background-color: #334155 !important;
+}
+
+/* SIDEBAR - Lien actif */
+nav a[class*="bg-emerald-50"] {
+  color: #047857 !important;
+  font-weight: 600 !important;
+}
+.dark nav a[class*="bg-emerald-50"] {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* SIDEBAR - "Paramètres" */
+nav a[href="/dashboard/parametres"] {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+}
+.dark nav a[href="/dashboard/parametres"] {
+  color: #e5e7eb !important;
+}
+nav a[href="/dashboard/parametres"]:hover {
+  color: #047857 !important;
+  background-color: #ecfdf5 !important;
+}
+.dark nav a[href="/dashboard/parametres"]:hover {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* SIDEBAR - "Déconnexion" */
+button[class*="text-red-600"] {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+.dark button[class*="text-red-600"] {
+  color: #ef4444 !important;
+}
+button[class*="text-red-600"]:hover {
+  color: #b91c1c !important;
+  background-color: #fee2e2 !important;
+}
+.dark button[class*="text-red-600"]:hover {
+  color: #fca5a5 !important;
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* SIDEBAR - Logo "SaaS FSM Maroc" */
+.text-xl.font-bold.text-emerald-600 {
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+.dark .text-xl.font-bold.text-emerald-600 {
+  color: #10b981 !important;
+}
+
+/* ==========================================
+   🌙 CORRECTION RAPIDE - MODE SOMBRE
+   ========================================== */
+
+.dark .bg-white {
+  background-color: #1e293b !important;
+}
+.dark .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+.dark .bg-gray-100 {
+  background-color: #1e293b !important;
+}
+.dark .border-gray-200 {
+  border-color: #334155 !important;
+}
+.dark .border-gray-100 {
+  border-color: #334155 !important;
+}
+.dark .border-gray-300 {
+  border-color: #475569 !important;
+}
+.dark .divide-gray-200 {
+  border-color: #334155 !important;
+}
+
+.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+.dark .text-gray-800 {
+  color: #e5e7eb !important;
+}
+.dark .text-gray-700 {
+  color: #d1d5db !important;
+}
+.dark .text-gray-600 {
+  color: #cbd5e1 !important;
+}
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+.dark .text-gray-400 {
+  color: #64748b !important;
+}
+.dark .text-3xl {
+  color: #f1f5f9 !important;
+}
+.dark .text-amber-600 {
+  color: #fbbf24 !important;
+}
+.dark .text-emerald-600 {
+  color: #34d399 !important;
+}
+
+.dark input {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+.dark input::placeholder {
+  color: #64748b !important;
+}
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #f1f5f9 !important;
+}
+.dark label {
+  color: #cbd5e1 !important;
+}
+
+.dark aside.bg-white {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+}
+.dark aside .border-gray-200 {
+  border-color: #1e293b !important;
+}
+.dark aside .text-emerald-600 {
+  color: #34d399 !important;
+}
+.dark aside nav a {
+  color: #94a3b8 !important;
+}
+.dark aside nav a:hover {
+  color: #f1f5f9 !important;
+  background-color: #1e293b !important;
+}
+.dark aside nav a[class*="bg-emerald-50"] {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.dark header.bg-white {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+}
+.dark header .text-gray-500 {
+  color: #94a3b8 !important;
+}
+.dark header .text-gray-600 {
+  color: #cbd5e1 !important;
+}
+
+.dark button[class*="text-red-600"] {
+  color: #f87171 !important;
+}
+.dark button[class*="text-red-600"]:hover {
+  color: #fca5a5 !important;
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+.dark .bg-white.rounded-xl {
+  background-color: #1e293b !important;
+}
+.dark .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+
+.dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+.dark .text-emerald-800 {
+  color: #34d399 !important;
+}
+.dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+.dark .text-red-800 {
+  color: #f87171 !important;
+}
+.dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+.dark .text-amber-800 {
+  color: #fbbf24 !important;
+}
+
+/* ==========================================
+   🎯 CORRECTION FINALE
+   ========================================== */
+
+/* HEADER - Mode sombre */
+.dark header h1,
+.dark header .text-gray-500,
+.dark header .text-sm.font-semibold.text-gray-500,
+.dark header .uppercase.tracking-wider {
+  color: #e5e7eb !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.dark header .text-gray-500 {
+  color: #d1d5db !important;
+}
+
+.dark header .text-sm.font-medium.text-gray-600 {
+  color: #e5e7eb !important;
+}
+
+/* CHIFFRES - Mode sombre */
+.dark .text-3xl.font-bold {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-3xl.font-bold.text-amber-600 {
+  color: #fbbf24 !important;
+}
+
+.dark .text-3xl.font-bold.text-emerald-600 {
+  color: #34d399 !important;
+}
+
+.dark .text-3xl.font-bold.text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+/* CARTES STATISTIQUES - Mode sombre */
+.dark .bg-white.p-6.rounded-xl .text-sm.font-medium.text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .bg-white.p-6.rounded-xl .text-3xl {
+  color: #f1f5f9 !important;
+}
+
+.dark .bg-white.p-6.rounded-xl .text-3xl.text-amber-600 {
+  color: #fbbf24 !important;
+}
+
+.dark .bg-white.p-6.rounded-xl .text-3xl.text-emerald-600 {
+  color: #34d399 !important;
+}
+
+/* SIDEBAR - Mode sombre */
+.dark aside .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+.dark aside .text-gray-600:hover {
+  color: #f1f5f9 !important;
+}
+
+/* TEXTE "Aucune facture" - Mode sombre */
+.dark .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}

@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "../../../utils/supabase/client";
 import Link from "next/link";
-import SignatureCanvas from "react-signature-canvas"; // 💡 Pense à installer : npm install react-signature-canvas @types/react-signature-canvas
+import SignatureCanvas from "react-signature-canvas";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
+import Modal from "../../../components/ui/Modal";
+import Select from "../../../components/ui/Select";
+import Textarea from "../../../components/ui/Textarea";
 
 // =========================================================================
 // TYPES & INTERFACES
@@ -16,7 +21,7 @@ interface InterventionMobile {
   date_prevue: string;
   compte_rendu: string | null;
   clients: { nom_complet: string } | null;
-  signature_client: string | null; // 💡 Ajout du champ pour l'URL de signature
+  signature_client: string | null;
 }
 
 export default function MesInterventionsPage() {
@@ -83,7 +88,7 @@ export default function MesInterventionsPage() {
   }, [fetchMyInterventions]);
 
   // =========================================================================
-  // UTILS : CONVERSION BASE64 VERS BLOB (Nécessaire pour l'upload Storage)
+  // UTILS : CONVERSION BASE64 VERS BLOB
   // =========================================================================
   const dataURLtoBlob = (dataURL: string) => {
     const arr = dataURL.split(",");
@@ -101,7 +106,6 @@ export default function MesInterventionsPage() {
   // ACTIONS METIER
   // =========================================================================
 
-  // Démarrer une intervention
   const handleDemarrer = async (id: string) => {
     try {
       setActionLoadingId(id);
@@ -125,17 +129,14 @@ export default function MesInterventionsPage() {
     }
   };
 
-  // Ouvrir la fenêtre de signature avant de valider la clôture
   const handleOuvrirSignature = (id: string) => {
     setSelectedInterventionId(id);
     setIsSignatureModalOpen(true);
   };
 
-  // Clôturer l'intervention avec sauvegarde du compte-rendu ET transfert de la signature
   const handleFinaliserCloture = async () => {
     if (!selectedInterventionId) return;
 
-    // Validation : Sécurité pour s'assurer que le client a bien tracé une signature
     if (signaturePadRef.current?.isEmpty()) {
       alert(
         "Veuillez demander au client de signer le canevas avant de valider.",
@@ -146,7 +147,6 @@ export default function MesInterventionsPage() {
     try {
       setActionLoadingId(selectedInterventionId);
 
-      // 1. Extraction de la signature du canvas en image Base64 PNG
       const dataUrl = signaturePadRef.current
         ?.getTrimmedCanvas()
         .toDataURL("image/png");
@@ -154,14 +154,12 @@ export default function MesInterventionsPage() {
         throw new Error("Échec de la génération du rendu de signature.");
       const signatureBlob = dataURLtoBlob(dataUrl);
 
-      // 2. Récupération de l'ID utilisateur pour compartimenter le Storage
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Session utilisateur expirée.");
       const userId = session.user.id;
 
-      // 3. Upload du fichier binaire vers Supabase Storage (Bucket: 'signatures')
       const filePath = `${userId}/${selectedInterventionId}.png`;
       const { error: storageError } = await supabase.storage
         .from("signatures")
@@ -172,12 +170,10 @@ export default function MesInterventionsPage() {
 
       if (storageError) throw storageError;
 
-      // 4. Génération de l'URL publique pérenne de l'image
       const {
         data: { publicUrl },
       } = supabase.storage.from("signatures").getPublicUrl(filePath);
 
-      // 5. Mise à jour finale en Base de Données
       const texteRapport =
         rapportsSaisis[selectedInterventionId]?.trim() || null;
       const { error: dbError } = await supabase
@@ -191,7 +187,6 @@ export default function MesInterventionsPage() {
 
       if (dbError) throw dbError;
 
-      // 6. Optimistic UI : Synchronisation instantanée de l'état local
       setInterventions((prev) =>
         prev.map((inv) =>
           inv.id === selectedInterventionId
@@ -205,7 +200,6 @@ export default function MesInterventionsPage() {
         ),
       );
 
-      // Fermeture propre de l'interface modale
       setIsSignatureModalOpen(false);
       setSelectedInterventionId(null);
     } catch (error) {
@@ -216,7 +210,6 @@ export default function MesInterventionsPage() {
     }
   };
 
-  // Mettre à jour le texte du rapport dans l'état local pendant la frappe
   const handleRapportChange = (id: string, texte: string) => {
     setRapportsSaisis((prev) => ({
       ...prev,
@@ -229,8 +222,8 @@ export default function MesInterventionsPage() {
   // =========================================================================
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <p className="text-gray-500 animate-pulse font-medium">
+      <div className="flex items-center justify-center min-h-96 bg-gray-50 dark:bg-dark-900">
+        <p className="text-gray-500 dark:text-gray-400 animate-pulse font-medium">
           Chargement de votre planning...
         </p>
       </div>
@@ -240,15 +233,17 @@ export default function MesInterventionsPage() {
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Mon Planning</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          Mon Planning
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Missions qui vous sont assignées.
         </p>
       </div>
 
       {interventions.length === 0 ? (
-        <div className="text-center p-8 bg-gray-50 rounded-xl border border-gray-100">
-          <p className="text-gray-500 font-medium">
+        <div className="text-center p-8 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-700">
+          <p className="text-gray-500 dark:text-gray-400 font-medium">
             Vous avez aucune mission prévue pour le moment. ☕
           </p>
         </div>
@@ -270,23 +265,23 @@ export default function MesInterventionsPage() {
             return (
               <div
                 key={item.id}
-                className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4"
+                className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl p-5 shadow-sm space-y-4"
               >
                 {/* EN-TÊTE DE LA CARTE */}
                 <div className="flex justify-between items-start gap-4">
                   <div>
-                    <h3 className="font-bold text-gray-900 text-lg leading-tight">
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-tight">
                       {item.titre}
                     </h3>
-                    <p className="text-sm font-medium text-emerald-600 mt-1">
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mt-1">
                       📍 {item.clients?.nom_complet || "Client inconnu"}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-sm font-bold text-gray-700 capitalize">
+                    <div className="text-sm font-bold text-gray-700 dark:text-gray-300 capitalize">
                       {dateStr}
                     </div>
-                    <div className="text-xs text-gray-500 font-mono">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                       {timeStr}
                     </div>
                   </div>
@@ -294,7 +289,7 @@ export default function MesInterventionsPage() {
 
                 {/* DESCRIPTION FOURNIE PAR LE GÉRANT */}
                 {item.description && (
-                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-dark-700/50 p-3 rounded-lg border border-gray-100 dark:border-dark-700">
                     {item.description}
                   </p>
                 )}
@@ -303,41 +298,38 @@ export default function MesInterventionsPage() {
                 <div className="pt-2">
                   {/* ÉTAT 1 : À FAIRE */}
                   {item.statut === "A_FAIRE" && (
-                    <button
+                    <Button
                       onClick={() => handleDemarrer(item.id)}
                       disabled={isActionLoading}
-                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm transition-colors shadow-sm disabled:opacity-50"
+                      variant="primary"
+                      className="w-full py-3"
                     >
                       {isActionLoading
                         ? "Démarrage..."
                         : "▶ Démarrer l'intervention"}
-                    </button>
+                    </Button>
                   )}
 
-                  {/* ÉTAT 2 : EN COURS (Affiche le champ de compte-rendu) */}
+                  {/* ÉTAT 2 : EN COURS */}
                   {item.statut === "EN_COURS" && (
                     <div className="space-y-3 animate-in fade-in duration-300">
-                      <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">
-                          📝 Compte-rendu intervention (Optionnel)
-                        </label>
-                        <textarea
-                          rows={3}
-                          placeholder="Décrivez les travaux réalisés, pièces changées..."
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900"
-                          value={rapportsSaisis[item.id] || ""}
-                          onChange={(e) =>
-                            handleRapportChange(item.id, e.target.value)
-                          }
-                        />
-                      </div>
-                      <button
-                        onClick={() => handleOuvrirSignature(item.id)} // 💡 Redirection vers la modale au lieu du handleCloturer direct
+                      <Textarea
+                        label="📝 Compte-rendu intervention (Optionnel)"
+                        placeholder="Décrivez les travaux réalisés, pièces changées..."
+                        value={rapportsSaisis[item.id] || ""}
+                        onChange={(e) =>
+                          handleRapportChange(item.id, e.target.value)
+                        }
+                        rows={3}
+                      />
+                      <Button
+                        onClick={() => handleOuvrirSignature(item.id)}
                         disabled={isActionLoading}
-                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-sm transition-colors shadow-sm disabled:opacity-50"
+                        variant="primary"
+                        className="w-full py-3"
                       >
                         ✔ Faire signer et Terminer la mission
-                      </button>
+                      </Button>
                     </div>
                   )}
 
@@ -345,25 +337,30 @@ export default function MesInterventionsPage() {
                   {item.statut === "CLOTUREE" && (
                     <div className="space-y-3">
                       {item.compte_rendu && (
-                        <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg">
-                          <p className="text-xs font-bold text-emerald-800 uppercase mb-1">
+                        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 p-3 rounded-lg">
+                          <p className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase mb-1">
                             Bilan de intervention :
                           </p>
-                          <p className="text-sm text-emerald-900">
+                          <p className="text-sm text-emerald-900 dark:text-emerald-300">
                             {item.compte_rendu}
                           </p>
                         </div>
                       )}
 
-                      <div className="w-full py-2 bg-gray-100 text-gray-500 rounded-lg font-bold text-sm text-center flex justify-center items-center gap-2">
+                      <div className="w-full py-2 bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400 rounded-lg font-bold text-sm text-center flex justify-center items-center gap-2">
                         <span>✅ Mission terminée</span>
                       </div>
 
                       <Link
                         href={`/dashboard/interventions/${item.id}/bon-intervention`}
-                        className="w-full py-3 bg-gray-900 hover:bg-black text-white rounded-lg font-bold text-sm text-center display:flex justify-center items-center gap-2 transition-colors shadow-sm mt-2 block"
+                        className="block mt-2"
                       >
-                        📄 Afficher le Bon Intervention
+                        <Button
+                          variant="primary"
+                          className="w-full py-3 bg-gray-900 hover:bg-black text-white focus:ring-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+                        >
+                          📄 Afficher le Bon Intervention
+                        </Button>
                       </Link>
                     </div>
                   )}
@@ -375,73 +372,60 @@ export default function MesInterventionsPage() {
       )}
 
       {/* =========================================================================
-          💡 MODALE DE SIGNATURE TACTILE (S'affiche par dessus l'application)
+          💡 MODALE DE SIGNATURE TACTILE AVEC COMPOSANT MODAL
          ========================================================================= */}
-      {isSignatureModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-100 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h2 className="text-base font-bold text-gray-900">
-                ✍ Signature du Client
-              </h2>
-              <button
-                onClick={() => {
-                  if (!actionLoadingId) setIsSignatureModalOpen(false);
-                }}
-                className="text-gray-400 hover:text-gray-600 text-xl font-bold focus:outline-none"
-              >
-                &times;
-              </button>
-            </div>
+      <Modal
+        isOpen={isSignatureModalOpen}
+        onClose={() => {
+          if (!actionLoadingId) setIsSignatureModalOpen(false);
+        }}
+        title="✍ Signature du Client"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Veuillez faire signer le client directement au doigt ou au stylet
+            dans la zone ci-dessous :
+          </p>
 
-            <div className="p-5 space-y-4">
-              <p className="text-xs text-gray-500">
-                Veuillez faire signer le client directement au doigt ou au
-                stylet dans la zone ci-dessous :
-              </p>
+          {/* Zone Canvas Tactile */}
+          <div className="border-2 border-dashed border-gray-300 dark:border-dark-700 rounded-xl bg-gray-50 dark:bg-dark-800 p-1">
+            <SignatureCanvas
+              ref={signaturePadRef}
+              penColor="black"
+              canvasProps={{
+                className:
+                  "w-full h-40 bg-white dark:bg-dark-900 rounded-lg cursor-crosshair",
+              }}
+            />
+          </div>
 
-              {/* Zone Canvas Tactile */}
-              <div className="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 p-1">
-                <SignatureCanvas
-                  ref={signaturePadRef}
-                  penColor="black"
-                  canvasProps={{
-                    className:
-                      "w-full h-40 bg-white rounded-lg cursor-crosshair",
-                  }}
-                />
-              </div>
-
-              {/* Barre de boutons d'action de la modale */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => signaturePadRef.current?.clear()}
-                  className="w-1/3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-colors"
-                  disabled={actionLoadingId !== null}
-                >
-                  Effacer
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFinaliserCloture}
-                  disabled={actionLoadingId !== null}
-                  className="w-2/3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {actionLoadingId !== null ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin rounded-full"></span>
-                      Enregistrement...
-                    </>
-                  ) : (
-                    "Confirmer & Clôturer"
-                  )}
-                </button>
-              </div>
-            </div>
+          {/* Boutons d'action */}
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              onClick={() => signaturePadRef.current?.clear()}
+              variant="secondary"
+              className="w-1/3 py-2.5"
+              disabled={actionLoadingId !== null}
+            >
+              Effacer
+            </Button>
+            <Button
+              type="button"
+              onClick={handleFinaliserCloture}
+              variant="primary"
+              className="w-2/3 py-2.5"
+              disabled={actionLoadingId !== null}
+              loading={actionLoadingId !== null}
+            >
+              {actionLoadingId !== null
+                ? "Enregistrement..."
+                : "Confirmer & Clôturer"}
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

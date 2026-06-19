@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import "./globals.css"; // Assure-toi d'importer ton CSS global ici si tu en as un
+import "./globals.css";
+import ThemeProvider from "../components/providers/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "SaaS FSM Maroc - Espace Gérant",
@@ -12,10 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
-      <body>
-        {/* Le paramètre children injectera automatiquement tes pages (login, dashboard...) ici */}
-        {children}
+    <html lang="fr" suppressHydrationWarning>
+      <body className="bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
