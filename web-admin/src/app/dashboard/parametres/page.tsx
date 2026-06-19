@@ -9,10 +9,13 @@ import {
   Hash,
   Settings,
   Loader2,
-  Save,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
-
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
+import Modal from "../../../components/ui/Modal";
+import Select from "../../../components/ui/Select";
+import Textarea from "../../../components/ui/Textarea";
 // =========================================================================
 // TYPES
 // =========================================================================
@@ -106,13 +109,10 @@ export default function ParametresPage() {
   }, [supabase]);
 
   useEffect(() => {
-    // 1. On déclare une fonction asynchrone interne
     const initData = async () => {
       await fetchEntrepriseData();
-      // (Remplace par fetchClientsData ou fetchEquipeData selon le fichier)
     };
 
-    // 2. On l'appelle
     initData();
   }, [fetchEntrepriseData]);
 
@@ -154,8 +154,8 @@ export default function ParametresPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-        <p className="text-gray-500 font-medium">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400" />
+        <p className="text-gray-500 dark:text-gray-400 font-medium">
           Chargement des paramètres...
         </p>
       </div>
@@ -167,11 +167,11 @@ export default function ParametresPage() {
       <Toaster position="top-right" />
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Settings className="text-emerald-600" />
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <Settings className="text-emerald-600 dark:text-emerald-400" />
           Paramètres de Entreprise
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Ces informations sont obligatoires pour la conformité légale de vos
           Factures DGI.
         </p>
@@ -179,121 +179,88 @@ export default function ParametresPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden"
+        className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl shadow-sm overflow-hidden"
       >
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="p-6 border-b border-gray-200 dark:border-dark-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Identité Visuelle et Commerciale
           </h2>
           <div className="max-w-md">
-            <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">
-              Raison Sociale *
-            </label>
-            <div className="relative">
-              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                required
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                value={formData.nom}
-                onChange={(e) =>
-                  setFormData({ ...formData, nom: e.target.value })
-                }
-              />
-            </div>
+            <Input
+              label="Raison Sociale"
+              icon={<Building2 size={16} />}
+              placeholder="Ex: SaaS FSM Maroc"
+              value={formData.nom}
+              onChange={(e) =>
+                setFormData({ ...formData, nom: e.target.value })
+              }
+              required
+            />
           </div>
         </div>
 
-        <div className="p-6 bg-gray-50 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="p-6 bg-gray-50 dark:bg-dark-900/30 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Identifiants Légaux (DGI Maroc)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">
-                ICE *
-              </label>
-              <div className="relative">
-                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  maxLength={15}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                  value={formData.ice}
-                  onChange={(e) =>
-                    setFormData({ ...formData, ice: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">
-                Identifiant Fiscal (IF) *
-              </label>
-              <div className="relative">
-                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                  value={formData.if_fiscal}
-                  onChange={(e) =>
-                    setFormData({ ...formData, if_fiscal: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">
-                Registre du Commerce (RC) *
-              </label>
-              <div className="relative">
-                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                  value={formData.rc}
-                  onChange={(e) =>
-                    setFormData({ ...formData, rc: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">
-                Taxe Professionnelle (Patente) *
-              </label>
-              <div className="relative">
-                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                  value={formData.patente}
-                  onChange={(e) =>
-                    setFormData({ ...formData, patente: e.target.value })
-                  }
-                />
-              </div>
-            </div>
+            <Input
+              label="ICE"
+              icon={<Hash size={16} />}
+              placeholder="Ex: 001234567890123"
+              value={formData.ice}
+              onChange={(e) =>
+                setFormData({ ...formData, ice: e.target.value })
+              }
+              maxLength={15}
+              required
+              className="font-mono"
+            />
+
+            <Input
+              label="Identifiant Fiscal (IF)"
+              icon={<FileText size={16} />}
+              placeholder="Ex: 12345678"
+              value={formData.if_fiscal}
+              onChange={(e) =>
+                setFormData({ ...formData, if_fiscal: e.target.value })
+              }
+              required
+              className="font-mono"
+            />
+
+            <Input
+              label="Registre du Commerce (RC)"
+              icon={<Briefcase size={16} />}
+              placeholder="Ex: 12345"
+              value={formData.rc}
+              onChange={(e) => setFormData({ ...formData, rc: e.target.value })}
+              required
+            />
+
+            <Input
+              label="Taxe Professionnelle (Patente)"
+              icon={<FileText size={16} />}
+              placeholder="Ex: 67890"
+              value={formData.patente}
+              onChange={(e) =>
+                setFormData({ ...formData, patente: e.target.value })
+              }
+              required
+            />
           </div>
         </div>
 
-        <div className="p-4 bg-white border-t border-gray-200 flex justify-end">
-          <button
+        <div className="p-4 bg-white dark:bg-dark-800 border-t border-gray-200 dark:border-dark-700 flex justify-end">
+          <Button
             type="submit"
+            variant="primary"
+            loading={submitLoading}
             disabled={submitLoading}
-            className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
+            className="px-6 py-2"
           >
-            {submitLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save size={18} />
-            )}
             {submitLoading ? "Mise à jour..." : "Sauvegarder les paramètres"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
