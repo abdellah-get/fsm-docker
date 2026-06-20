@@ -3,7 +3,8 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
-import { Lock, Mail, Loader2 } from "lucide-react";
+import { Lock, Mail, Loader2, Building2 } from "lucide-react";
+import { Button, Input } from "../../components/ui";
 
 export default function LoginPage() {
   const [email, setEmail] = useState<string>("");
@@ -20,7 +21,6 @@ export default function LoginPage() {
     setErrorMsg(null);
 
     try {
-      // 1. Authentification de l'utilisateur
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
           email,
@@ -31,7 +31,6 @@ export default function LoginPage() {
         throw new Error("Identifiants incorrects ou utilisateur introuvable.");
       }
 
-      // 2. 💡 PRO FIX : Récupération du rôle dans la table utilisateurs
       const { data: profile, error: profileError } = await supabase
         .from("utilisateurs")
         .select("role")
@@ -42,93 +41,78 @@ export default function LoginPage() {
         throw new Error("Impossible de récupérer le profil utilisateur.");
       }
 
-      // 3. 🔀 Redirection intelligente basée sur le rôle
       router.refresh();
 
       if (profile.role === "TECHNICIEN") {
-        router.push("/dashboard/mes-interventions"); // Redirection vers l'app mobile
+        router.push("/dashboard/mes-interventions");
       } else {
-        router.push("/dashboard"); // Redirection vers l'espace Gérant
+        router.push("/dashboard");
       }
     } catch (error: unknown) {
       console.error("Erreur de connexion :", error);
-
-      // On vérifie proprement le type de l'erreur
-      if (error instanceof Error) {
-        setErrorMsg(error.message);
-      } else {
-        setErrorMsg("Une erreur est survenue lors de la connexion.");
-      }
-
+      setErrorMsg(
+        error instanceof Error
+          ? error.message
+          : "Une erreur est survenue lors de la connexion.",
+      );
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-dark-900 px-4">
+      <div className="w-full max-w-md space-y-8 bg-white dark:bg-dark-800 p-8 rounded-2xl border border-gray-200 dark:border-dark-700 shadow-sm">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center">
+              <Building2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
             SaaS FSM Maroc
           </h2>
-          <p className="mt-2 text-sm text-gray-500">Portail de Connexion</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Portail de Connexion
+          </p>
         </div>
 
         {errorMsg && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg text-center">
+          <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-center">
             {errorMsg}
           </div>
         )}
 
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="space-y-4 rounded-md shadow-sm">
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Adresse Email
-              </label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm outline-none"
-                  placeholder="email@entreprise.ma"
-                />
-              </div>
-            </div>
+          <div className="space-y-4">
+            <Input
+              label="Adresse Email"
+              icon={<Mail size={18} />}
+              type="email"
+              placeholder="email@entreprise.ma"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
 
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Mot de passe
-              </label>
-              <div className="relative mt-1">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm outline-none"
-                />
-              </div>
-            </div>
+            <Input
+              label="Mot de passe"
+              icon={<Lock size={18} />}
+              type="password"
+              placeholder="Votre mot de passe"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                "Se connecter"
-              )}
-            </button>
-          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={loading}
+            className="w-full py-2.5"
+          >
+            {loading ? "Connexion..." : "Se connecter"}
+          </Button>
         </form>
       </div>
     </div>

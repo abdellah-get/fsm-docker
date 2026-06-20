@@ -6,6 +6,9 @@ import { createClient } from "../../utils/supabase/client";
 import RecentInvoicesTable, {
   FactureDbRow,
 } from "../../components/dashboard/RecentInvoicesTable";
+import PendingRequestsCard, {
+  DemandeDbRow,
+} from "../../components/dashboard/PendingRequestsCard";
 
 export default function DashboardPage() {
   const supabase = createClient();
@@ -18,6 +21,7 @@ export default function DashboardPage() {
   });
 
   const [recentInvoices, setRecentInvoices] = useState<FactureDbRow[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<DemandeDbRow[]>([]);
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -44,31 +48,42 @@ export default function DashboardPage() {
         const entrepriseId = userData.entreprise_id;
 
         // Requêtes parallèles pour plus de performance
-        const [interventionsResponse, facturesResponse] = await Promise.all([
-          supabase
-            .from("interventions")
-            .select("*", { count: "exact", head: true })
-            .eq("entreprise_id", entrepriseId)
-            .eq("statut", "EN_COURS"),
-          supabase
-            .from("factures")
-            .select(
-              `
+        const [interventionsResponse, facturesResponse, demandesResponse] =
+          await Promise.all([
+            supabase
+              .from("interventions")
+              .select("*", { count: "exact", head: true })
+              .eq("entreprise_id", entrepriseId)
+              .eq("statut", "EN_COURS"),
+            supabase
+              .from("factures")
+              .select(
+                `
               id, montant_ht, montant_ttc, statut, created_at,
               interventions (
                 titre,
                 clients (nom_complet, adresse_geographique)
               )
             `,
-            )
-            .eq("entreprise_id", entrepriseId)
-            .order("created_at", { ascending: false })
-            .limit(10), // Optimisation : on ne charge que les 10 plus récentes
-        ]);
+              )
+              .eq("entreprise_id", entrepriseId)
+              .order("created_at", { ascending: false })
+              .limit(10), // Optimisation : on ne charge que les 10 plus récentes
+            supabase
+              .from("demandes")
+              .select(
+                "id, nom_complet, telephone, titre, description, statut, created_at",
+              )
+              .eq("entreprise_id", entrepriseId)
+              .eq("statut", "EN_ATTENTE")
+              .order("created_at", { ascending: false }),
+          ]);
 
         if (interventionsResponse.error)
           console.error("Erreur interventions:", interventionsResponse.error);
         if (facturesResponse.error) throw facturesResponse.error;
+        if (demandesResponse.error)
+          console.error("Erreur demandes:", demandesResponse.error);
 
         let enAttenteTotal = 0;
         let caMensuelTotal = 0;
@@ -101,6 +116,7 @@ export default function DashboardPage() {
         });
 
         setRecentInvoices(facturesData || []);
+        setPendingRequests(demandesResponse.data || []);
       } catch (error) {
         console.error("Erreur générale lors du chargement des données:", error);
       } finally {
@@ -146,6 +162,21 @@ export default function DashboardPage() {
         <p className="text-gray-500 mt-1">
           Gérez vos interventions et suivez vos indicateurs de facturation.
         </p>
+      </div>
+
+      {/* Nouvelle section : demandes clients en attente */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-900">
+            Demandes en attente
+          </h3>
+          {pendingRequests.length > 0 && (
+            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">
+              {pendingRequests.length}
+            </span>
+          )}
+        </div>
+        <PendingRequestsCard demandes={pendingRequests} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
