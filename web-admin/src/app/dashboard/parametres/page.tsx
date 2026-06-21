@@ -13,9 +13,13 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import Modal from "../../../components/ui/Modal";
-import Select from "../../../components/ui/Select";
-import Textarea from "../../../components/ui/Textarea";
+// import Modal from "../../../components/ui/Modal"; // Retiré si non utilisé
+// import Select from "../../../components/ui/Select"; // Retiré si non utilisé
+// import Textarea from "../../../components/ui/Textarea"; // Retiré si non utilisé
+
+// 📍 NOUVEAU : Import de ton composant Twilio
+import TwilioSettings from "../../../components/dashboard/TwilioSettings";
+
 // =========================================================================
 // TYPES
 // =========================================================================
@@ -163,20 +167,21 @@ export default function ParametresPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 max-w-4xl mx-auto space-y-8">
+      {" "}
+      {/* 📍 NOUVEAU : space-y-8 pour aérer */}
       <Toaster position="top-right" />
-
+      {/* --- EN-TÊTE --- */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Settings className="text-emerald-600 dark:text-emerald-400" />
-          Paramètres de Entreprise
+          Paramètres de l'Entreprise
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Ces informations sont obligatoires pour la conformité légale de vos
-          Factures DGI.
+          Gérez les informations légales et vos intégrations tierces.
         </p>
       </div>
-
+      {/* --- FORMULAIRE D'IDENTITÉ LÉGALE --- */}
       <form
         onSubmit={handleSubmit}
         className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl shadow-sm overflow-hidden"
@@ -259,10 +264,16 @@ export default function ParametresPage() {
             disabled={submitLoading}
             className="px-6 py-2"
           >
-            {submitLoading ? "Mise à jour..." : "Sauvegarder les paramètres"}
+            {submitLoading ? "Mise à jour..." : "Sauvegarder les identifiants"}
           </Button>
         </div>
       </form>
+      {/* 📍 NOUVEAU : INTÉGRATION DU COMPOSANT TWILIO ICI */}
+      {entrepriseId && (
+        <div className="mt-8">
+          <TwilioSettings entrepriseId={entrepriseId} />
+        </div>
+      )}
     </div>
   );
 }

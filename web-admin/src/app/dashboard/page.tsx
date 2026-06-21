@@ -47,37 +47,36 @@ export default function DashboardPage() {
 
         const entrepriseId = userData.entreprise_id;
 
-        // Requêtes parallèles pour plus de performance
-        const [interventionsResponse, facturesResponse, demandesResponse] =
-          await Promise.all([
-            supabase
-              .from("interventions")
-              .select("*", { count: "exact", head: true })
-              .eq("entreprise_id", entrepriseId)
-              .eq("statut", "EN_COURS"),
-            supabase
-              .from("factures")
-              .select(
-                `
-              id, montant_ht, montant_ttc, statut, created_at,
+        // Requêtes parallèles : FUSION de ton travail (entreprise_id) et celui de ton binôme (demandes)
+        const [interventionsResponse, facturesResponse, demandesResponse] = await Promise.all([
+          supabase
+            .from("interventions")
+            .select("*", { count: "exact", head: true })
+            .eq("entreprise_id", entrepriseId)
+            .eq("statut", "EN_COURS"),
+          supabase
+            .from("factures")
+            .select(
+              `
+              id, entreprise_id, montant_ht, montant_ttc, statut, created_at,
               interventions (
                 titre,
-                clients (nom_complet, adresse_geographique)
+                clients (nom_complet, adresse_geographique, telephone)
               )
-            `,
-              )
-              .eq("entreprise_id", entrepriseId)
-              .order("created_at", { ascending: false })
-              .limit(10), // Optimisation : on ne charge que les 10 plus récentes
-            supabase
-              .from("demandes")
-              .select(
-                "id, nom_complet, telephone, titre, description, statut, created_at",
-              )
-              .eq("entreprise_id", entrepriseId)
-              .eq("statut", "EN_ATTENTE")
-              .order("created_at", { ascending: false }),
-          ]);
+            `
+            )
+            .eq("entreprise_id", entrepriseId)
+            .order("created_at", { ascending: false })
+            .limit(10), // Optimisation : on ne charge que les 10 plus récentes
+          supabase
+            .from("demandes")
+            .select(
+              "id, nom_complet, telephone, titre, description, statut, created_at"
+            )
+            .eq("entreprise_id", entrepriseId)
+            .eq("statut", "EN_ATTENTE")
+            .order("created_at", { ascending: false }),
+        ]);
 
         if (interventionsResponse.error)
           console.error("Erreur interventions:", interventionsResponse.error);
@@ -127,6 +126,44 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [supabase]);
 
+  // =====================================================================
+  // 📍 FONCTION : Envoi WhatsApp
+  // =====================================================================
+  const envoyerFactureWhatsApp = async (
+    telephoneClient: string,
+    montant: string,
+    urlPdfPublic: string,
+    factureId: string,
+    entrepriseId: string,
+  ) => {
+    try {
+      const response = await fetch("/api/whatsapp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          telephone: telephoneClient,
+          montant: montant,
+          lienPdf: urlPdfPublic,
+          factureId: factureId,
+          entrepriseId: entrepriseId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Échec de l'envoi");
+      }
+
+      alert("✅ Message WhatsApp envoyé avec succès au client !");
+    } catch (error: any) {
+      console.error(error);
+      alert(`❌ L'envoi WhatsApp a échoué : ${error.message}`);
+    }
+  };
+  // =====================================================================
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -145,7 +182,7 @@ export default function DashboardPage() {
         </h3>
         <p className="text-sm text-amber-900 mb-4">
           Votre compte authentification existe, mais aucun profil correspondant
-          été pas trouvé dans la table{" "}
+          n'a été trouvé dans la table{" "}
           <code className="bg-amber-100 px-1 rounded font-mono">
             utilisateurs
           </code>{" "}
@@ -212,8 +249,10 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {/* Toute la logique du tableau et du PDF a été déléguée ici 👇 */}
-          <RecentInvoicesTable invoices={recentInvoices} />
+          <RecentInvoicesTable
+            invoices={recentInvoices}
+            onSendWhatsApp={envoyerFactureWhatsApp}
+          />
         </div>
       </div>
     </div>
