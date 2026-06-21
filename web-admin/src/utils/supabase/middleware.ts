@@ -44,13 +44,8 @@ export async function updateSession(request: NextRequest) {
 
   const currentPath = request.nextUrl.pathname;
 
-  console.log("\n========== [MIDDLEWARE] ==========");
-  console.log("PATH:", currentPath);
-  console.log("USER:", user?.id || "AUCUN");
-
   // PROTECTION 1 : Utilisateur NON connecté
   if (!user && currentPath.startsWith("/dashboard")) {
-    console.log("-> REDIRECTION /login (pas de user)");
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -58,50 +53,41 @@ export async function updateSession(request: NextRequest) {
 
   // PROTECTION 2 : Utilisateur CONNECTÉ (Gestion des rôles)
   if (user) {
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from("utilisateurs")
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
 
-    const role = profile?.role;
+    const role = profile?.role; // 'GERANT' ou 'TECHNICIEN'
 
-    console.log("ROLE:", role || "AUCUN");
-    console.log("PROFILE ERROR:", profileError?.message || "aucune");
-
+    // Si on n'arrive pas a determiner le role, on laisse passer sans bloquer
+    // plutot que de risquer une redirection incorrecte basee sur une donnee absente.
     if (!role) {
-      console.log("-> Pas de role determine, on laisse passer");
-      console.log("===================================\n");
       return response;
     }
 
+    // Redirection intelligente depuis le login UNIQUEMENT
     if (currentPath === "/login") {
       const url = request.nextUrl.clone();
       url.pathname =
         role === "TECHNICIEN" ? "/dashboard/mes-interventions" : "/dashboard";
-      console.log("-> REDIRECTION depuis /login vers", url.pathname);
-      console.log("===================================\n");
       return NextResponse.redirect(url);
     }
 
     if (role === "TECHNICIEN") {
+      // Sécurité supplémentaire : Si le technicien tente d'aller sur l'accueil global
       if (currentPath === "/dashboard") {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard/mes-interventions";
-        console.log("-> REDIRECTION /dashboard vers", url.pathname);
-        console.log("===================================\n");
         return NextResponse.redirect(url);
       }
 
-      const segments = currentPath.split("/");
-      const isBonIntervention = segments.includes("bon-intervention");
-
-      console.log("SEGMENTS:", segments);
-      console.log("isBonIntervention:", isBonIntervention);
-      console.log(
-        "startsWith /dashboard/interventions:",
-        currentPath.startsWith("/dashboard/interventions"),
-      );
+      // MUR DE SÉCURITÉ : on bloque le technicien sur la gestion des interventions,
+      // SAUF sur n'importe quelle route bon-intervention, peu importe sa profondeur.
+      const isBonIntervention = currentPath
+        .split("/")
+        .includes("bon-intervention");
 
       if (
         currentPath.startsWith("/dashboard/interventions") &&
@@ -109,22 +95,17 @@ export async function updateSession(request: NextRequest) {
       ) {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard/mes-interventions";
-        console.log("-> REDIRECTION ejection interventions vers", url.pathname);
-        console.log("===================================\n");
         return NextResponse.redirect(url);
       }
 
+      // Bloquer l'accès à la gestion de l'équipe
       if (currentPath.startsWith("/dashboard/equipe")) {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard/mes-interventions";
-        console.log("-> REDIRECTION ejection equipe vers", url.pathname);
-        console.log("===================================\n");
         return NextResponse.redirect(url);
       }
     }
   }
 
-  console.log("-> Aucune redirection, requete autorisee");
-  console.log("===================================\n");
   return response;
 }
