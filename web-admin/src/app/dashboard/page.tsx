@@ -6,6 +6,9 @@ import { createClient } from "../../utils/supabase/client";
 import RecentInvoicesTable, {
   FactureDbRow,
 } from "../../components/dashboard/RecentInvoicesTable";
+import PendingRequestsCard, {
+  DemandeDbRow,
+} from "../../components/dashboard/PendingRequestsCard";
 
 export default function DashboardPage() {
   const supabase = createClient();
@@ -18,6 +21,7 @@ export default function DashboardPage() {
   });
 
   const [recentInvoices, setRecentInvoices] = useState<FactureDbRow[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<DemandeDbRow[]>([]);
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -43,32 +47,43 @@ export default function DashboardPage() {
 
         const entrepriseId = userData.entreprise_id;
 
-        // Requêtes parallèles pour plus de performance
-        const [interventionsResponse, facturesResponse] = await Promise.all([
-          supabase
-            .from("interventions")
-            .select("*", { count: "exact", head: true })
-            .eq("entreprise_id", entrepriseId)
-            .eq("statut", "EN_COURS"),
-          supabase
-            .from("factures")
-            .select(
-              `
+        // Requêtes parallèles : FUSION de ton travail (entreprise_id) et celui de ton binôme (demandes)
+        const [interventionsResponse, facturesResponse, demandesResponse] =
+          await Promise.all([
+            supabase
+              .from("interventions")
+              .select("*", { count: "exact", head: true })
+              .eq("entreprise_id", entrepriseId)
+              .eq("statut", "EN_COURS"),
+            supabase
+              .from("factures")
+              .select(
+                `
               id, entreprise_id, montant_ht, montant_ttc, statut, created_at,
               interventions (
                 titre,
                 clients (nom_complet, adresse_geographique, telephone)
               )
             `,
-            )
-            .eq("entreprise_id", entrepriseId)
-            .order("created_at", { ascending: false })
-            .limit(10), // Optimisation : on ne charge que les 10 plus récentes
-        ]);
+              )
+              .eq("entreprise_id", entrepriseId)
+              .order("created_at", { ascending: false })
+              .limit(10), // Optimisation : on ne charge que les 10 plus récentes
+            supabase
+              .from("demandes")
+              .select(
+                "id, nom_complet, telephone, titre, description, statut, created_at",
+              )
+              .eq("entreprise_id", entrepriseId)
+              .eq("statut", "EN_ATTENTE")
+              .order("created_at", { ascending: false }),
+          ]);
 
         if (interventionsResponse.error)
           console.error("Erreur interventions:", interventionsResponse.error);
         if (facturesResponse.error) throw facturesResponse.error;
+        if (demandesResponse.error)
+          console.error("Erreur demandes:", demandesResponse.error);
 
         let enAttenteTotal = 0;
         let caMensuelTotal = 0;
@@ -101,6 +116,7 @@ export default function DashboardPage() {
         });
 
         setRecentInvoices(facturesData || []);
+        setPendingRequests(demandesResponse.data || []);
       } catch (error) {
         console.error("Erreur générale lors du chargement des données:", error);
       } finally {
@@ -112,13 +128,13 @@ export default function DashboardPage() {
   }, [supabase]);
 
   // =====================================================================
-  // 📍 NOUVELLE FONCTION : Envoi WhatsApp
+  // 📍 FONCTION : Envoi WhatsApp
   // =====================================================================
   const envoyerFactureWhatsApp = async (
     telephoneClient: string,
     montant: string,
     urlPdfPublic: string,
-    factureId: string, // 👈 Reçu depuis le tableau
+    factureId: string,
     entrepriseId: string,
   ) => {
     try {
@@ -131,21 +147,20 @@ export default function DashboardPage() {
           telephone: telephoneClient,
           montant: montant,
           lienPdf: urlPdfPublic,
-          factureId: factureId, // ✅ Proprement défini
+          factureId: factureId,
           entrepriseId: entrepriseId,
         }),
       });
 
       if (!response.ok) {
-        // On récupère le message d'erreur renvoyé par le backend JSON
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Échec de l'envoi");
       }
 
       alert("✅ Message WhatsApp envoyé avec succès au client !");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("❌ L'envoi WhatsApp a échoué.");
+      alert(`❌ L'envoi WhatsApp a échoué : ${error.message}`);
     }
   };
   // =====================================================================
@@ -187,6 +202,21 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Nouvelle section : demandes clients en attente */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-900">
+            Demandes en attente
+          </h3>
+          {pendingRequests.length > 0 && (
+            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">
+              {pendingRequests.length}
+            </span>
+          )}
+        </div>
+        <PendingRequestsCard demandes={pendingRequests} />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm transition-shadow hover:shadow-md">
           <h3 className="text-sm font-medium text-gray-500 mb-2">
@@ -220,7 +250,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {/* 📍 MODIFICATION ICI : On passe la fonction en propriété (prop) */}
           <RecentInvoicesTable
             invoices={recentInvoices}
             onSendWhatsApp={envoyerFactureWhatsApp}
