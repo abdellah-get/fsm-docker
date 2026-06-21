@@ -54,10 +54,10 @@ export default function DashboardPage() {
             .from("factures")
             .select(
               `
-              id, montant_ht, montant_ttc, statut, created_at,
+              id, entreprise_id, montant_ht, montant_ttc, statut, created_at,
               interventions (
                 titre,
-                clients (nom_complet, adresse_geographique)
+                clients (nom_complet, adresse_geographique, telephone)
               )
             `,
             )
@@ -111,6 +111,45 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [supabase]);
 
+  // =====================================================================
+  // 📍 NOUVELLE FONCTION : Envoi WhatsApp
+  // =====================================================================
+  const envoyerFactureWhatsApp = async (
+    telephoneClient: string,
+    montant: string,
+    urlPdfPublic: string,
+    factureId: string, // 👈 Reçu depuis le tableau
+    entrepriseId: string,
+  ) => {
+    try {
+      const response = await fetch("/api/whatsapp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          telephone: telephoneClient,
+          montant: montant,
+          lienPdf: urlPdfPublic,
+          factureId: factureId, // ✅ Proprement défini
+          entrepriseId: entrepriseId,
+        }),
+      });
+
+      if (!response.ok) {
+        // On récupère le message d'erreur renvoyé par le backend JSON
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Échec de l'envoi");
+      }
+
+      alert("✅ Message WhatsApp envoyé avec succès au client !");
+    } catch (error) {
+      console.error(error);
+      alert("❌ L'envoi WhatsApp a échoué.");
+    }
+  };
+  // =====================================================================
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -129,7 +168,7 @@ export default function DashboardPage() {
         </h3>
         <p className="text-sm text-amber-900 mb-4">
           Votre compte authentification existe, mais aucun profil correspondant
-          été pas trouvé dans la table{" "}
+          n'a été trouvé dans la table{" "}
           <code className="bg-amber-100 px-1 rounded font-mono">
             utilisateurs
           </code>{" "}
@@ -181,8 +220,11 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {/* Toute la logique du tableau et du PDF a été déléguée ici 👇 */}
-          <RecentInvoicesTable invoices={recentInvoices} />
+          {/* 📍 MODIFICATION ICI : On passe la fonction en propriété (prop) */}
+          <RecentInvoicesTable
+            invoices={recentInvoices}
+            onSendWhatsApp={envoyerFactureWhatsApp}
+          />
         </div>
       </div>
     </div>
