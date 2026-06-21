@@ -48,36 +48,35 @@ export default function DashboardPage() {
         const entrepriseId = userData.entreprise_id;
 
         // Requêtes parallèles : FUSION de ton travail (entreprise_id) et celui de ton binôme (demandes)
-        const [interventionsResponse, facturesResponse, demandesResponse] =
-          await Promise.all([
-            supabase
-              .from("interventions")
-              .select("*", { count: "exact", head: true })
-              .eq("entreprise_id", entrepriseId)
-              .eq("statut", "EN_COURS"),
-            supabase
-              .from("factures")
-              .select(
-                `
+        const [interventionsResponse, facturesResponse, demandesResponse] = await Promise.all([
+          supabase
+            .from("interventions")
+            .select("*", { count: "exact", head: true })
+            .eq("entreprise_id", entrepriseId)
+            .eq("statut", "EN_COURS"),
+          supabase
+            .from("factures")
+            .select(
+              `
               id, entreprise_id, montant_ht, montant_ttc, statut, created_at,
               interventions (
                 titre,
                 clients (nom_complet, adresse_geographique, telephone)
               )
-            `,
-              )
-              .eq("entreprise_id", entrepriseId)
-              .order("created_at", { ascending: false })
-              .limit(10), // Optimisation : on ne charge que les 10 plus récentes
-            supabase
-              .from("demandes")
-              .select(
-                "id, nom_complet, telephone, titre, description, statut, created_at",
-              )
-              .eq("entreprise_id", entrepriseId)
-              .eq("statut", "EN_ATTENTE")
-              .order("created_at", { ascending: false }),
-          ]);
+            `
+            )
+            .eq("entreprise_id", entrepriseId)
+            .order("created_at", { ascending: false })
+            .limit(10), // Optimisation : on ne charge que les 10 plus récentes
+          supabase
+            .from("demandes")
+            .select(
+              "id, nom_complet, telephone, titre, description, statut, created_at"
+            )
+            .eq("entreprise_id", entrepriseId)
+            .eq("statut", "EN_ATTENTE")
+            .order("created_at", { ascending: false }),
+        ]);
 
         if (interventionsResponse.error)
           console.error("Erreur interventions:", interventionsResponse.error);

@@ -22,6 +22,8 @@ interface InterventionMobile {
   compte_rendu: string | null;
   clients: { nom_complet: string } | null;
   signature_client: string | null;
+  montant_final: number | null;
+  prix_valide_a: string | null;
 }
 
 export default function MesInterventionsPage() {
@@ -35,6 +37,9 @@ export default function MesInterventionsPage() {
   const [rapportsSaisis, setRapportsSaisis] = useState<Record<string, string>>(
     {},
   );
+
+  // --- ÉTATS POUR LA SAISIE DU PRIX ---
+  const [prixSaisis, setPrixSaisis] = useState<Record<string, string>>({});
 
   // --- ÉTATS POUR LA MODALE DE SIGNATURE ---
   const [isSignatureModalOpen, setIsSignatureModalOpen] =
@@ -62,6 +67,7 @@ export default function MesInterventionsPage() {
           .select(
             `
             id, titre, description, statut, date_prevue, compte_rendu, signature_client,
+            montant_final, prix_valide_a,
             clients ( nom_complet )
             `,
           )
@@ -105,6 +111,43 @@ export default function MesInterventionsPage() {
   // =========================================================================
   // ACTIONS METIER
   // =========================================================================
+
+  const handlePrixChange = (id: string, valeur: string) => {
+    setPrixSaisis((prev) => ({
+      ...prev,
+      [id]: valeur,
+    }));
+  };
+
+  const handleValiderPrix = async (id: string) => {
+    const montant = parseFloat(prixSaisis[id]);
+
+    if (isNaN(montant) || montant <= 0) {
+      alert("Veuillez saisir un montant valide.");
+      return;
+    }
+
+    try {
+      setActionLoadingId(id);
+      const { error } = await supabase
+        .from("interventions")
+        .update({ montant_final: montant })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setInterventions((prev) =>
+        prev.map((inv) =>
+          inv.id === id ? { ...inv, montant_final: montant } : inv,
+        ),
+      );
+    } catch (error) {
+      console.error("Erreur enregistrement prix :", error);
+      alert("Impossible d'enregistrer le prix.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const handleDemarrer = async (id: string) => {
     try {
@@ -176,16 +219,69 @@ export default function MesInterventionsPage() {
 
       const texteRapport =
         rapportsSaisis[selectedInterventionId]?.trim() || null;
+
+      // La signature vaut aussi acceptation finale du prix : on horodate
+      // prix_valide_a a ce moment si un montant a deja ete saisi.
+      const interventionConcernee = interventions.find(
+        (inv) => inv.id === selectedInterventionId,
+      );
+      const updatePayload: Record<string, unknown> = {
+        statut: "CLOTUREE",
+        compte_rendu: texteRapport,
+        signature_client: publicUrl,
+      };
+
+      if (
+        interventionConcernee?.montant_final &&
+        !interventionConcernee.prix_valide_a
+      ) {
+        updatePayload.prix_valide_a = new Date().toISOString();
+      }
+
       const { error: dbError } = await supabase
         .from("interventions")
-        .update({
-          statut: "CLOTUREE",
-          compte_rendu: texteRapport,
-          signature_client: publicUrl,
-        })
+        .update(updatePayload)
         .eq("id", selectedInterventionId);
 
       if (dbError) throw dbError;
+
+      // La signature du client vaut acceptation finale (travail + prix),
+      // comme un recu signe chez un artisan. On cree donc la facture
+      // immediatement, sans attendre une validation separee.
+      if (interventionConcernee?.montant_final) {
+        const montantTTC = interventionConcernee.montant_final;
+        const tauxTVA = 20.0;
+        const montantHT = Math.round((montantTTC / 1.2) * 100) / 100;
+
+        const dateEcheance = new Date();
+        dateEcheance.setDate(dateEcheance.getDate() + 30);
+
+        const { data: profilTechnicien } = await supabase
+          .from("utilisateurs")
+          .select("entreprise_id")
+          .eq("id", userId)
+          .single();
+
+        if (profilTechnicien?.entreprise_id) {
+          const { error: factureError } = await supabase
+            .from("factures")
+            .insert([
+              {
+                entreprise_id: profilTechnicien.entreprise_id,
+                intervention_id: selectedInterventionId,
+                montant_ht: montantHT,
+                taux_tva: tauxTVA,
+                montant_ttc: montantTTC,
+                statut: "EN_ATTENTE",
+                date_echeance: dateEcheance.toISOString().split("T")[0],
+              },
+            ]);
+
+          if (factureError) {
+            console.error("Erreur creation facture automatique:", factureError);
+          }
+        }
+      }
 
       setInterventions((prev) =>
         prev.map((inv) =>
@@ -195,6 +291,8 @@ export default function MesInterventionsPage() {
                 statut: "CLOTUREE",
                 compte_rendu: texteRapport,
                 signature_client: publicUrl,
+                prix_valide_a:
+                  (updatePayload.prix_valide_a as string) || inv.prix_valide_a,
               }
             : inv,
         ),
@@ -262,6 +360,8 @@ export default function MesInterventionsPage() {
               minute: "2-digit",
             });
 
+            const prixDejaSaisi = item.montant_final !== null;
+
             return (
               <div
                 key={item.id}
@@ -296,18 +396,62 @@ export default function MesInterventionsPage() {
 
                 {/* DYNAMIQUE SELON LE STATUT */}
                 <div className="pt-2">
-                  {/* ÉTAT 1 : À FAIRE */}
-                  {item.statut === "A_FAIRE" && (
-                    <Button
-                      onClick={() => handleDemarrer(item.id)}
-                      disabled={isActionLoading}
-                      variant="primary"
-                      className="w-full py-3"
-                    >
-                      {isActionLoading
-                        ? "Démarrage..."
-                        : "▶ Démarrer l'intervention"}
-                    </Button>
+                  {/* ÉTAT 1 : À FAIRE — prix pas encore saisi */}
+                  {item.statut === "A_FAIRE" && !prixDejaSaisi && (
+                    <div className="space-y-3 animate-in fade-in duration-300">
+                      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 p-3 rounded-lg">
+                        <p className="text-xs font-bold text-blue-800 dark:text-blue-400 uppercase mb-2">
+                          💰 Prix convenu avec le client
+                        </p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+                          Diagnostiquez sur place, mettez-vous d&apos;accord
+                          avec le client, puis saisissez le montant final avant
+                          de démarrer.
+                        </p>
+                        <Input
+                          type="number"
+                          placeholder="Ex: 350"
+                          value={prixSaisis[item.id] || ""}
+                          onChange={(e) =>
+                            handlePrixChange(item.id, e.target.value)
+                          }
+                        />
+                      </div>
+                      <Button
+                        onClick={() => handleValiderPrix(item.id)}
+                        disabled={isActionLoading || !prixSaisis[item.id]}
+                        variant="primary"
+                        className="w-full py-3"
+                      >
+                        {isActionLoading
+                          ? "Enregistrement..."
+                          : "✔ Valider le prix"}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* ÉTAT 1bis : À FAIRE — prix deja saisi, pret a demarrer */}
+                  {item.statut === "A_FAIRE" && prixDejaSaisi && (
+                    <div className="space-y-3 animate-in fade-in duration-300">
+                      <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 p-3 rounded-lg flex items-center justify-between">
+                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
+                          Prix convenu
+                        </span>
+                        <span className="font-bold text-emerald-900 dark:text-emerald-300">
+                          {item.montant_final?.toLocaleString("fr-MA")} MAD
+                        </span>
+                      </div>
+                      <Button
+                        onClick={() => handleDemarrer(item.id)}
+                        disabled={isActionLoading}
+                        variant="primary"
+                        className="w-full py-3"
+                      >
+                        {isActionLoading
+                          ? "Démarrage..."
+                          : "▶ Démarrer l'intervention"}
+                      </Button>
+                    </div>
                   )}
 
                   {/* ÉTAT 2 : EN COURS */}
@@ -336,6 +480,17 @@ export default function MesInterventionsPage() {
                   {/* ÉTAT 3 : CLÔTURÉE */}
                   {item.statut === "CLOTUREE" && (
                     <div className="space-y-3">
+                      {item.montant_final && (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 p-3 rounded-lg flex items-center justify-between">
+                          <span className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
+                            Montant facturé
+                          </span>
+                          <span className="font-bold text-emerald-900 dark:text-emerald-300">
+                            {item.montant_final.toLocaleString("fr-MA")} MAD
+                          </span>
+                        </div>
+                      )}
+
                       {item.compte_rendu && (
                         <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 p-3 rounded-lg">
                           <p className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase mb-1">

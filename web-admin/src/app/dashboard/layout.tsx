@@ -60,7 +60,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             "/dashboard/parametres",
           ];
 
-          if (!routesAutorisees.includes(pathname)) {
+          // Le bon d'intervention vit sous /dashboard/interventions/[id]/bon-intervention,
+          // qui n'est pas dans la liste exacte ci-dessus. On l'autorise explicitement
+          // en verifiant si "bon-intervention" est un segment de l'URL, exactement
+          // comme le fait deja le middleware cote serveur (utils/supabase/middleware.ts).
+          const estSurBonIntervention = pathname
+            .split("/")
+            .includes("bon-intervention");
+
+          if (!routesAutorisees.includes(pathname) && !estSurBonIntervention) {
             router.push("/dashboard/mes-interventions");
             return;
           }
