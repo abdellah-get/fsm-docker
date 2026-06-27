@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "../../utils/supabase/client";
+import Link from "next/link"; // 🌟 AJOUT : Pour pouvoir naviguer vers la carte
+
 // On importe notre nouveau composant et l'interface associée
 import RecentInvoicesTable, {
   FactureDbRow,
@@ -48,35 +50,36 @@ export default function DashboardPage() {
         const entrepriseId = userData.entreprise_id;
 
         // Requêtes parallèles : FUSION de ton travail (entreprise_id) et celui de ton binôme (demandes)
-        const [interventionsResponse, facturesResponse, demandesResponse] = await Promise.all([
-          supabase
-            .from("interventions")
-            .select("*", { count: "exact", head: true })
-            .eq("entreprise_id", entrepriseId)
-            .eq("statut", "EN_COURS"),
-          supabase
-            .from("factures")
-            .select(
-              `
+        const [interventionsResponse, facturesResponse, demandesResponse] =
+          await Promise.all([
+            supabase
+              .from("interventions")
+              .select("*", { count: "exact", head: true })
+              .eq("entreprise_id", entrepriseId)
+              .eq("statut", "EN_COURS"),
+            supabase
+              .from("factures")
+              .select(
+                `
               id, entreprise_id, montant_ht, montant_ttc, statut, created_at,
               interventions (
                 titre,
                 clients (nom_complet, adresse_geographique, telephone)
               )
-            `
-            )
-            .eq("entreprise_id", entrepriseId)
-            .order("created_at", { ascending: false })
-            .limit(10), // Optimisation : on ne charge que les 10 plus récentes
-          supabase
-            .from("demandes")
-            .select(
-              "id, nom_complet, telephone, titre, description, statut, created_at"
-            )
-            .eq("entreprise_id", entrepriseId)
-            .eq("statut", "EN_ATTENTE")
-            .order("created_at", { ascending: false }),
-        ]);
+            `,
+              )
+              .eq("entreprise_id", entrepriseId)
+              .order("created_at", { ascending: false })
+              .limit(10), // Optimisation : on ne charge que les 10 plus récentes
+            supabase
+              .from("demandes")
+              .select(
+                "id, nom_complet, telephone, titre, description, statut, created_at",
+              )
+              .eq("entreprise_id", entrepriseId)
+              .neq("statut", "ASSIGNEE") // 👈 MODIFICATION ICI : On exclut celles qui sont assignées
+              .order("created_at", { ascending: false }),
+          ]);
 
         if (interventionsResponse.error)
           console.error("Erreur interventions:", interventionsResponse.error);
@@ -194,11 +197,20 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Vue ensemble</h2>
-        <p className="text-gray-500 mt-1">
-          Gérez vos interventions et suivez vos indicateurs de facturation.
-        </p>
+      {/* 🌟 AJOUT : Le header avec le bouton pour voir la carte */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Vue ensemble</h2>
+          <p className="text-gray-500 mt-1">
+            Gérez vos interventions et suivez vos indicateurs de facturation.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/suivi-techniciens"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition"
+        >
+          📍 Suivre les techniciens en direct
+        </Link>
       </div>
 
       {/* Nouvelle section : demandes clients en attente */}

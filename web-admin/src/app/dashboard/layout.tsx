@@ -13,6 +13,7 @@ import {
   LogOut,
   ClipboardList,
   Loader2,
+  Briefcase,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import ThemeToggle from "../../components/ui/ThemeToggle";
@@ -22,23 +23,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const supabase = createClient();
 
-  // --- ÉTATS SÉCURITÉ & PROFIL ---
+  // --- ÉTATS UI & PROFIL ---
   const [role, setRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
-  // --- SÉCURISATION ET ROUTE GUARD ---
+  // --- RÉCUPÉRATION DU PROFIL (La sécurité est gérée par le middleware) ---
   useEffect(() => {
-    const checkAccess = async () => {
+    const fetchProfile = async () => {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (!session) {
-          router.push("/login");
-          return;
-        }
+        // Si pas de session, on ne fait rien, le middleware va s'occuper de rediriger vers /login
+        if (!session) return;
 
         const { data: profile, error } = await supabase
           .from("utilisateurs")
@@ -46,43 +45,24 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           .eq("id", session.user.id)
           .single();
 
-        if (error || !profile) {
-          router.push("/login");
+        if (error) {
+          console.error("Erreur lecture profil :", error);
           return;
         }
 
-        setRole(profile.role);
-        setUserName(profile.nom_complet || "");
-
-        if (profile.role === "TECHNICIEN") {
-          const routesAutorisees = [
-            "/dashboard/mes-interventions",
-            "/dashboard/parametres",
-          ];
-
-          // Le bon d'intervention vit sous /dashboard/interventions/[id]/bon-intervention,
-          // qui n'est pas dans la liste exacte ci-dessus. On l'autorise explicitement
-          // en verifiant si "bon-intervention" est un segment de l'URL, exactement
-          // comme le fait deja le middleware cote serveur (utils/supabase/middleware.ts).
-          const estSurBonIntervention = pathname
-            .split("/")
-            .includes("bon-intervention");
-
-          if (!routesAutorisees.includes(pathname) && !estSurBonIntervention) {
-            router.push("/dashboard/mes-interventions");
-            return;
-          }
+        if (profile) {
+          setRole(profile.role);
+          setUserName(profile.nom_complet || "");
         }
       } catch (err) {
-        console.error("Erreur contrôle d'accès layout :", err);
-        router.push("/login");
+        console.error("Erreur inattendue layout :", err);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAccess();
-  }, [pathname, router, supabase]);
+    fetchProfile();
+  }, [supabase]);
 
   // Gestion de la déconnexion
   const handleLogout = async () => {
@@ -109,14 +89,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return `${baseClass} ${pathname === path ? activeClass : inactiveClass}`;
   };
 
-  // ⏳ Écran de chargement
+  // ⏳ Écran de chargement UI (Très court)
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-dark-900">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400 mx-auto" />
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Validation des accès sécurisés...
+            Chargement de votre espace...
           </p>
         </div>
       </div>
@@ -178,13 +158,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           )}
 
           {role === "TECHNICIEN" && (
-            <Link
-              href="/dashboard/mes-interventions"
-              className={getNavLinkClass("/dashboard/mes-interventions")}
-            >
-              <ClipboardList size={18} />
-              Mon Planning
-            </Link>
+            <>
+              <Link
+                href="/dashboard/mes-interventions"
+                className={getNavLinkClass("/dashboard/mes-interventions")}
+              >
+                <ClipboardList size={18} />
+                Mon Planning
+              </Link>
+
+              <Link
+                href="/dashboard/work"
+                className={getNavLinkClass("/dashboard/work")}
+              >
+                <Briefcase size={18} />
+                Mon Travail (Work)
+              </Link>
+            </>
           )}
         </nav>
 

@@ -61,13 +61,11 @@ export async function updateSession(request: NextRequest) {
 
     const role = profile?.role; // 'GERANT' ou 'TECHNICIEN'
 
-    // Si on n'arrive pas a determiner le role, on laisse passer sans bloquer
-    // plutot que de risquer une redirection incorrecte basee sur une donnee absente.
     if (!role) {
       return response;
     }
 
-    // Redirection intelligente depuis le login UNIQUEMENT
+    // Redirection intelligente depuis le login
     if (currentPath === "/login") {
       const url = request.nextUrl.clone();
       url.pathname =
@@ -75,31 +73,22 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (role === "TECHNICIEN") {
-      // Sécurité supplémentaire : Si le technicien tente d'aller sur l'accueil global
-      if (currentPath === "/dashboard") {
-        const url = request.nextUrl.clone();
-        url.pathname = "/dashboard/mes-interventions";
-        return NextResponse.redirect(url);
-      }
+    // 🌟 LA LOGIQUE EXPERT : WHITELIST STRICTE POUR LE TECHNICIEN
+    if (role === "TECHNICIEN" && currentPath.startsWith("/dashboard")) {
+      // 1. Les seules routes exactes auxquelles le technicien a le droit d'accéder
+      const routesAutorisees = [
+        "/dashboard/mes-interventions",
+        "/dashboard/work",
+        "/dashboard/parametres",
+      ];
 
-      // MUR DE SÉCURITÉ : on bloque le technicien sur la gestion des interventions,
-      // SAUF sur n'importe quelle route bon-intervention, peu importe sa profondeur.
+      // 2. Règle spéciale : On autorise si l'URL contient le segment "bon-intervention"
       const isBonIntervention = currentPath
         .split("/")
         .includes("bon-intervention");
 
-      if (
-        currentPath.startsWith("/dashboard/interventions") &&
-        !isBonIntervention
-      ) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/dashboard/mes-interventions";
-        return NextResponse.redirect(url);
-      }
-
-      // Bloquer l'accès à la gestion de l'équipe
-      if (currentPath.startsWith("/dashboard/equipe")) {
+      // 3. Si la route demandée n'est PAS dans la liste ET n'est PAS un bon d'intervention -> BANNI
+      if (!routesAutorisees.includes(currentPath) && !isBonIntervention) {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard/mes-interventions";
         return NextResponse.redirect(url);

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "../../../../utils/supabase/client";
 import Button from "../../../../components/ui/Button";
 import Select from "../../../../components/ui/Select";
-import { Phone, MapPin, Calendar, Loader2 } from "lucide-react";
+import { Phone, MapPin, Loader2, CheckCircle } from "lucide-react";
 
 interface DemandeDetail {
   id: string;
@@ -38,54 +38,52 @@ export default function DetailDemandePage() {
   const [assigning, setAssigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("utilisateurs")
-        .select("entreprise_id")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!profile) throw new Error("Profil introuvable.");
-
-      const [demandeRes, techniciensRes] = await Promise.all([
-        supabase
-          .from("demandes")
-          .select("*")
-          .eq("id", demandeId)
-          .eq("entreprise_id", profile.entreprise_id)
-          .single(),
-        supabase
-          .from("utilisateurs")
-          .select("id, nom_complet")
-          .eq("entreprise_id", profile.entreprise_id)
-          .eq("role", "TECHNICIEN")
-          .eq("is_active", true),
-      ]);
-
-      if (demandeRes.error) throw demandeRes.error;
-      if (techniciensRes.error) throw techniciensRes.error;
-
-      setDemande(demandeRes.data);
-      setTechniciens(techniciensRes.data || []);
-    } catch (err) {
-      console.error("Erreur chargement demande:", err);
-      setError("Impossible de charger cette demande.");
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, demandeId]);
-
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from("utilisateurs")
+          .select("entreprise_id")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!profile) throw new Error("Profil introuvable.");
+
+        const [demandeRes, techniciensRes] = await Promise.all([
+          supabase
+            .from("demandes")
+            .select("*")
+            .eq("id", demandeId)
+            .eq("entreprise_id", profile.entreprise_id)
+            .single(),
+          supabase
+            .from("utilisateurs")
+            .select("id, nom_complet")
+            .eq("entreprise_id", profile.entreprise_id)
+            .eq("role", "TECHNICIEN")
+            .eq("is_active", true),
+        ]);
+
+        if (demandeRes.error) throw demandeRes.error;
+        if (techniciensRes.error) throw techniciensRes.error;
+
+        setDemande(demandeRes.data);
+        setTechniciens(techniciensRes.data || []);
+      } catch (err) {
+        console.error("Erreur chargement demande:", err);
+        setError("Impossible de charger cette demande.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchData();
-  }, [fetchData]);
+  }, [supabase, demandeId]);
 
   const handleAssigner = async () => {
     if (!demande || !selectedTechnicienId) return;
@@ -100,6 +98,7 @@ export default function DetailDemandePage() {
         .select("id")
         .eq("entreprise_id", demande.entreprise_id)
         .eq("telephone", demande.telephone)
+        .limit(1)
         .maybeSingle();
 
       if (clientSearchError) throw clientSearchError;
@@ -154,7 +153,9 @@ export default function DetailDemandePage() {
 
       if (updateDemandeError) throw updateDemandeError;
 
-      router.push("/dashboard");
+      // 5. MODIFICATION : Force la mise à jour des données en vidant le cache client Next.js
+      // Force un rechargement complet de l'application pour purger la mémoire de Next.js
+      window.location.href = "/dashboard";
     } catch (err) {
       console.error("Erreur assignation:", err);
       setError(
@@ -179,6 +180,27 @@ export default function DetailDemandePage() {
     return (
       <div className="p-6 max-w-xl mx-auto bg-amber-50 border border-amber-200 rounded-xl mt-12 text-center">
         <p className="text-amber-900">Demande introuvable.</p>
+      </div>
+    );
+  }
+
+  // SÉCURITÉ : Si la demande est déjà assignée, on affiche un écran de succès au lieu du formulaire
+  if (demande.statut === "ASSIGNEE") {
+    return (
+      <div className="p-6 max-w-xl mx-auto bg-emerald-50 border border-emerald-200 rounded-xl mt-12 text-center space-y-4">
+        <div className="flex justify-center text-emerald-600">
+          <CheckCircle size={48} />
+        </div>
+        <h2 className="text-xl font-bold text-emerald-900">
+          Demande déjà traitée
+        </h2>
+        <p className="text-emerald-700">
+          Cette demande a déjà été associée à un technicien et convertie en
+          mission.
+        </p>
+        <Button onClick={() => router.push("/dashboard")} className="mt-2">
+          Retour au tableau de bord
+        </Button>
       </div>
     );
   }
