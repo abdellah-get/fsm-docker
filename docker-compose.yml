@@ -1,0 +1,9 @@
+services:
+  web-admin:
+    build: ./web-admin
+    container_name: saas_web_admin
+    ports:
+      - "3000:3000"
+    restart: always
+    env_file:
+      - ./web-admin/.env.local # <-- Cette ligne indique à Docker de charger tes clés Supabase
