@@ -22,7 +22,8 @@
 - **Questions en attente :** Aucune pour le moment.
 - **Temps passé et prochaines étapes :** 2 heures. Prochaine étape : Entamer le Jalon 1 avec mon binôme en respectant notre système de Pull Requests.
 
-Le 07 Juillet
+## Le 07 Juillet
+
 Ce que j'ai fait : Début et avancée majeure sur le Jalon 1. J'ai utilisé le Git Flow en créant une branche dédiée (feat/jalon1-fondations). J'ai codé une route API /health sous Next.js, vérifié la sécurité du .gitignore, et réécrit complètement le README.md pour que n'importe qui puisse lancer le projet via Docker. Enfin, j'ai ouvert ma Pull Request.
 
 Ce qui me bloque : Rien de bloquant, mais un petit chantier en vue : l'outil d'analyse de code (ESLint) m'a sorti une quarantaine d'erreurs de syntaxe et de variables non utilisées dans l'ancien code. Je dois nettoyer ça avant de clôturer définitivement le jalon.
@@ -31,7 +32,8 @@ Ce que je vais faire ensuite : Corriger les erreurs de linting (notamment avec -
 
 Temps passé : 2h30
 
-Bilan du jalon 1 : Fondations Git et qualité de code
+## Bilan du jalon 1 : Fondations Git et qualité de code
+
 Dates : du 07 Juillet au 08 Juillet
 
 Objectif rappelé en une phrase : Mettre en place un environnement de travail propre en équipe via Git (branches, pull requests), configurer une base d'application saine et intégrer une vérification de la qualité du code.
