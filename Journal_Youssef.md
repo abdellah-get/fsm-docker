@@ -76,3 +76,84 @@ Aucun blocage ou question ouverte à ce stade.
 ## prochaines étapes
 
 - **Suite du planning** : Démarrage du Jalon 1 avec mon binôme en respectant notre système de Pull Requests.
+
+# Compte rendu -- 07 Juillet
+
+## Ce que j'ai fait
+
+J'ai bien avancé sur le **Jalon 1** en travaillant sur une branche
+dédiée (`feat/jalon1`) selon le Git Flow. J'ai développé une
+route API `/health` avec Next.js, vérifié le contenu du `.gitignore`
+afin d'éviter le versionnement de fichiers sensibles, puis amélioré le
+`README.md` pour faciliter le lancement du projet avec Docker. Enfin,
+j'ai ouvert une Pull Request pour proposer mes modifications.
+
+## Ce qui me bloque
+
+Aucun blocage majeur. En revanche, ESLint a signalé plusieurs problèmes
+courants dans le projet existant, notamment des variables déclarées mais
+inutilisées, des imports non utilisés et quelques avertissements liés au
+formatage du code. Un nettoyage est nécessaire avant de finaliser le
+jalon.
+
+## Ce que je vais faire ensuite
+
+Corriger les remarques d'ESLint (avec `--fix` lorsque c'est possible),
+ajouter un commit de correction sur ma branche, puis demander à mon
+binôme Yousef de relire et valider la Pull Request.
+
+**Temps passé :** 2h
+
+# Bilan du Jalon 1 : Fondations Git et qualité du code
+
+**Période :** du 07 Juillet au 08 Juillet
+
+## Objectif
+
+Mettre en place un environnement de développement collaboratif avec Git,
+préparer une base de projet propre et intégrer un contrôle de la qualité
+du code.
+
+## Réalisations
+
+- Création d'une route `/api/health` fonctionnelle.
+- Mise à jour du `README.md` avec les étapes de lancement via Docker.
+- Vérification du `.gitignore`.
+- Configuration et exécution d'ESLint.
+- Respect du Git Flow avec un développement sur une branche dédiée.
+
+## Preuves
+
+- Dépôt GitHub : https://github.com/abdellah-get/fsm-docker.git
+- Pull Request : #11
+- Capture d'écran du GitHub Board transmise à l'encadrant.
+
+## Critères validés
+
+- Aucun push direct sur `main`.
+- Historique des commits clair.
+- Projet lançable en suivant le `README`.
+- Tableau de bord mis à jour.
+
+## Difficultés rencontrées et solutions
+
+- VS Code affichait une erreur liée aux types de Next.js
+  (`Cannot find module 'next/server'`). Le problème a été résolu après
+  l'installation des dépendances avec `npm install` et le redémarrage
+  du serveur TypeScript.
+- ESLint a détecté plusieurs erreurs fréquentes (imports inutilisés,
+  variables non utilisées et problèmes de mise en forme). Une
+  correction automatique suivie d'une vérification manuelle a permis
+  de résoudre ces points.
+
+## Questions en attente
+
+Aucune.
+
+## Temps passé et prochaines étapes
+
+**Temps passé :** 3h
+
+La prochaine étape consiste à préparer les tâches du **Jalon 2**, les
+ajouter au GitHub Board et commencer le développement sur une nouvelle
+branche.
