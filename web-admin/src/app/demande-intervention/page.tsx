@@ -175,7 +175,7 @@ export default function FormulaireClient() {
       }
 
       // --- UPLOAD DES PHOTOS DANS SUPABASE STORAGE ---
-      let uploadedPhotoUrls: string[] = [];
+      const uploadedPhotoUrls: string[] = [];
       if (photos.length > 0) {
         for (const photo of photos) {
           const fileExt = photo.name.split(".").pop();
