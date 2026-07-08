@@ -55,3 +55,10 @@ Beaucoup d'erreurs remontées par le linter (apostrophes non échappées en JSX,
 Questions en attente : Aucune pour le moment.
 
 Temps passé et prochaines étapes : 2h30. Prochaine étape : Découper les tâches du Jalon 2, les ajouter au Board, et commencer le développement sur une nouvelle branche fraîche.
+
+## Le 08 Juillet
+
+- **Ce que j'ai fait :** J'ai attaqué le Jalon 2 ! L'objectif principal était d'optimiser Docker et d'ajouter la base de données. J'ai modifié mon `next.config.ts` (mode standalone) et écrit un nouveau `Dockerfile` en multi-étapes pour réduire drastiquement la taille de l'image de l'application. Ensuite, j'ai préparé le `docker-compose.yml` pour y intégrer une base PostgreSQL locale avec un volume persistant, le tout sécurisé via un fichier `.env`. J'ai aussi réussi à extraire la structure de ma base Supabase en ligne (le fichier `init.sql`) en utilisant le CLI de Supabase.
+- **Ce qui me bloque :** J'ai eu le classique coup de stress avec l'erreur du moteur Docker non allumé sur Windows, mais j'ai vite compris. Le vrai point de réflexion en ce moment, c'est l'intégration de Supabase : mon code utilise la syntaxe spécifique de l'API Supabase (`supabase.from`), ce qui ne marche pas directement avec un conteneur PostgreSQL brut. Je fais une pause pour décider de la meilleure stratégie sans avoir à réécrire tout mon code.
+- **Ce que je vais faire ensuite :** Trancher sur la méthode à utiliser pour la base de données locale, écrire la fonction qui lit/écrit dans la base pour valider le critère du jalon, et enfin tester que tout se lance parfaitement avec la commande `docker compose up`.
+- **Temps passé :** 2h
