@@ -157,3 +157,35 @@ Aucune.
 La prochaine étape consiste à préparer les tâches du **Jalon 2**, les
 ajouter au GitHub Board et commencer le développement sur une nouvelle
 branche.
+
+# Compte rendu -- 08 Juillet
+
+**Période concernée :** 08 Juillet
+
+---
+
+## 1. Réalisations
+
+- Optimisation du **Dockerfile** de l'application Next.js (Field Service Management) pour la production :
+  - Mise en place d'un **build multi‑étapes** (séparation construction / exécution).
+  - Utilisation d'une image de base `node:20-alpine` pour réduire la taille.
+  - Limitation des dépendances installées (`npm ci --only=production`) dans l'image finale.
+  - Activation du mode **standalone** de Next.js pour une image encore plus légère (< 100 Mo).
+- Création et enrichissement du fichier **`.dockerignore`** pour exclure `node_modules`, `.next`, `.env`, et les fichiers inutiles du contexte de build.
+- Mise à jour du fichier **`docker-compose.yml`** :
+
+## 2. Difficultés techniques rencontrées
+
+- **Aucune difficulté technique notable pour le moment.**  
+  Les modifications apportées (Dockerfile, .dockerignore, docker-compose) se sont déroulées sans erreur bloquante.
+
+## 3. Prochaines étapes
+
+- **Construire l’image Docker de production** à l’aide du Dockerfile optimisé (`docker build -t fsm-app:light .`).
+- **Lancer l’environnement complet** avec `docker compose up` pour valider le dialogue entre les services (app + base de données).
+- Partager le travail avec mon binôme Abdellah via une **Pull Request**.
+- Préparer le **bilan du Jalon 2** pour notre encadrant.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures.
