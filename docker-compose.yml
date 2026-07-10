@@ -1,45 +1,36 @@
 version: "3.8"
 
 services:
-  # 1. La Base de Données (PostgreSQL)
   db:
     image: postgres:15-alpine
-    container_name: fsm-db
+    container_name: fsm_postgres_db
     restart: always
     environment:
+      # On aligne avec votre code
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: fsm_db
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - fsm-network
 
-  # 2. Ton application web (Next.js)
-  web:
+  web-admin:
     build:
       context: ./web-admin
       dockerfile: Dockerfile
-    container_name: fsm-web
+    container_name: fsm_web_admin
     restart: always
     ports:
-      - "3001:3000"
-    env_file:
-      - ./web-admin/.env.local
+      - "3000:3000"
     environment:
+      # L'hôte DOIT être "db" et non "localhost"
       - DATABASE_URL=postgresql://admin:admin@db:5432/fsm_db
-      - LOCAL_DATABASE_URL=postgresql://admin:admin@db:5432/fsm_db
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.factice
     depends_on:
       - db
-    networks:
-      - fsm-network
-
-networks:
-  fsm-network:
-    driver: bridge
 
 volumes:
-  db-data:
+  pgdata:
