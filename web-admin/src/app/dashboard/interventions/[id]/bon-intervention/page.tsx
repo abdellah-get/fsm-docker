@@ -5,9 +5,7 @@ import { createClient } from "../../../../../utils/supabase/client";
 import { Printer, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import Button from "../../../../../components/ui/Button";
-import Modal from "../../../../../components/ui/Modal";
-import Select from "../../../../../components/ui/Select";
-import Textarea from "../../../../../components/ui/Textarea";
+import { getBonInterventionDataSQL } from "./actions"; // 👈 Import de l'action SQL
 
 // Définition des interfaces
 interface ClientRelation {
@@ -62,38 +60,28 @@ export default function BonInterventionPage({ params }: BonInterventionProps) {
     try {
       setLoading(true);
 
+      // 1. Récupération de l'utilisateur connecté via Supabase Auth
       const { data: authData } = await supabase.auth.getUser();
-      if (authData.user) {
-        const { data: currentUser } = await supabase
-          .from("utilisateurs")
-          .select("role")
-          .eq("id", authData.user.id)
-          .single();
-
-        if (currentUser?.role === "TECHNICIEN") {
-          setBackUrl("/dashboard/mes-interventions");
-        } else {
-          setBackUrl("/dashboard/interventions");
-        }
+      if (!authData.user) {
+        throw new Error("Vous devez être connecté pour voir ce document.");
       }
 
-      const { data: intervention, error: interError } = await supabase
-        .from("interventions")
-        .select(
-          `
-          *,
-          clients ( nom_complet, email, telephone, adresse_geographique ),
-          utilisateurs ( nom_complet, role ),
-          entreprises ( nom, telephone, email )
-        `,
-        )
-        .eq("id", id)
-        .single();
+      // 2. Appel de l'action Serveur SQL pour récupérer les données et le rôle
+      const result = await getBonInterventionDataSQL(id, authData.user.id);
 
-      if (interError) throw interError;
-      if (!intervention) throw new Error("Intervention introuvable");
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
-      setData(intervention as unknown as InterventionBonData);
+      // 3. Logique du bouton retour en fonction du rôle
+      if (result.role === "TECHNICIEN") {
+        setBackUrl("/dashboard/mes-interventions");
+      } else {
+        setBackUrl("/dashboard/interventions");
+      }
+
+      // 4. Mise à jour des données d'intervention
+      setData(result.intervention as unknown as InterventionBonData);
     } catch (err: unknown) {
       const e = err as Error;
       setError(e.message);

@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { getFacturesDataSQL, createFactureSQL } from "./actions"; // 👈 On importe nos actions SQL
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Modal from "../../../components/ui/Modal";
 import Select from "../../../components/ui/Select";
+
 // =========================================================================
 // TYPES STRICTS
 // =========================================================================
@@ -53,55 +55,33 @@ export default function FacturationPage() {
   });
 
   // =========================================================================
-  // PIPELINE DE CHARGEMENT
+  // PIPELINE DE CHARGEMENT VIA SQL
   // =========================================================================
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
+      // 1. Récupération de la session via Supabase Auth
       const {
         data: { session },
         error: sessionError,
       } = await supabase.auth.getSession();
       if (sessionError || !session) throw new Error("Session introuvable.");
 
-      const { data: profile, error: profileError } = await supabase
-        .from("utilisateurs")
-        .select("entreprise_id")
-        .eq("id", session.user.id)
-        .single();
+      // 2. Appel de l'action SQL pour récupérer toutes les données
+      const result = await getFacturesDataSQL(session.user.id);
 
-      if (profileError || !profile?.entreprise_id)
-        throw new Error("Profil invalide.");
+      if (!result.success) throw new Error(result.error);
 
-      const entId = profile.entreprise_id;
-      setEntrepriseId(entId);
-
-      const { data: facturesData, error: facturesError } = await supabase
-        .from("factures")
-        .select(
-          `
-          id, montant_ht, montant_ttc, taux_tva, statut, date_echeance, created_at,
-          interventions ( titre, clients ( nom_complet ) )
-        `,
-        )
-        .eq("entreprise_id", entId)
-        .order("created_at", { ascending: false });
-
-      if (facturesError) throw facturesError;
-      setFactures((facturesData as unknown as FactureRow[]) || []);
-
-      const { data: interData, error: interError } = await supabase
-        .from("interventions")
-        .select(`id, titre, clients ( nom_complet )`)
-        .eq("entreprise_id", entId)
-        .eq("statut", "CLOTUREE");
-
-      if (interError) throw interError;
-      setInterventions((interData as unknown as InterventionOption[]) || []);
+      setEntrepriseId(result.entrepriseId || null);
+      setFactures((result.factures as unknown as FactureRow[]) || []);
+      setInterventions(
+        (result.interventions as unknown as InterventionOption[]) || [],
+      );
     } catch (error) {
       const err = error as Error;
       console.error("Erreur de chargement Facturation :", err);
+      toast.error("Erreur de récupération des données.");
     } finally {
       setLoading(false);
     }
@@ -115,7 +95,7 @@ export default function FacturationPage() {
   }, [fetchData]);
 
   // =========================================================================
-  // CRÉATION D'UNE FACTURE
+  // CRÉATION D'UNE FACTURE VIA SQL
   // =========================================================================
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -138,16 +118,20 @@ export default function FacturationPage() {
         statut: "EN_ATTENTE",
       };
 
-      const { error } = await supabase.from("factures").insert([payload]);
-      if (error) throw error;
+      // 📍 Appel de l'action SQL pour l'insertion
+      const result = await createFactureSQL(payload);
+      if (!result.success) throw new Error(result.error);
 
       setFormData({ intervention_id: "", montant_ht: "", date_echeance: "" });
       setIsModalOpen(false);
+      toast.success("Facture générée avec succès");
+
+      // On rafraîchit les données de la page
       await fetchData();
     } catch (error) {
       const err = error as Error;
       console.error("Erreur de création de facture :", err);
-      alert(`Erreur: ${err.message}`);
+      toast.error(`Erreur: ${err.message}`);
     } finally {
       setSubmitLoading(false);
     }
@@ -178,6 +162,7 @@ export default function FacturationPage() {
 
   return (
     <div className="p-6 space-y-6">
+      <Toaster position="top-right" />
       {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>

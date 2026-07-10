@@ -3,8 +3,9 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
-import { Lock, Mail, Loader2, Building2 } from "lucide-react";
+import { Lock, Mail, Building2 } from "lucide-react";
 import { Button, Input } from "../../components/ui";
+import { getUserRoleSQL } from "./actions"; // 👈 Import de l'action SQL
 
 export default function LoginPage() {
   const [email, setEmail] = useState<string>("");
@@ -21,6 +22,7 @@ export default function LoginPage() {
     setErrorMsg(null);
 
     try {
+      // 1. Authentification via Supabase Auth (On garde ça !)
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
           email,
@@ -31,19 +33,19 @@ export default function LoginPage() {
         throw new Error("Identifiants incorrects ou utilisateur introuvable.");
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("utilisateurs")
-        .select("role")
-        .eq("id", authData.user.id)
-        .single();
+      // 2. 📍 Récupération du rôle via notre base de données PostgreSQL
+      const result = await getUserRoleSQL(authData.user.id);
 
-      if (profileError || !profile) {
-        throw new Error("Impossible de récupérer le profil utilisateur.");
+      if (!result.success || !result.role) {
+        throw new Error(
+          result.error || "Impossible de récupérer le profil utilisateur.",
+        );
       }
 
       router.refresh();
 
-      if (profile.role === "TECHNICIEN") {
+      // 3. Redirection basée sur le rôle
+      if (result.role === "TECHNICIEN") {
         router.push("/dashboard/mes-interventions");
       } else {
         router.push("/dashboard");

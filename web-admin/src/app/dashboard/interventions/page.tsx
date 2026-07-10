@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "../../../utils/supabase/client";
+import {
+  getInterventionsDataSQL,
+  createInterventionSQL,
+  updateInterventionSQL,
+} from "./actions"; // 👈 On importe nos actions SQL
 import Link from "next/link";
 import {
   CalendarClock,
@@ -75,67 +80,34 @@ export default function InterventionsPage() {
   });
 
   // =========================================================================
-  // PIPELINE DE CHARGEMENT DES DONNÉES
+  // PIPELINE DE CHARGEMENT DES DONNÉES VIA SQL
   // =========================================================================
   const fetchInitialData = useCallback(
     async (showSpinner = true) => {
       try {
         if (showSpinner) setLoading(true);
 
+        // 1. On vérifie la session Auth Supabase
         const {
           data: { session },
           error: sessionError,
         } = await supabase.auth.getSession();
+
         if (sessionError || !session)
           throw new Error("Utilisateur non authentifié.");
 
-        const { data: profile, error: profileError } = await supabase
-          .from("utilisateurs")
-          .select("entreprise_id")
-          .eq("id", session.user.id)
-          .single();
+        // 2. On récupère tout d'un coup via notre Action Serveur SQL
+        const result = await getInterventionsDataSQL(session.user.id);
 
-        if (profileError || !profile?.entreprise_id) {
-          throw new Error("Profil d'entreprise introuvable.");
-        }
+        if (!result.success) throw new Error(result.error);
 
-        const entId = profile.entreprise_id;
-        setEntrepriseId(entId);
-
-        const [interventionsRes, clientsRes, techniciensRes] =
-          await Promise.all([
-            supabase
-              .from("interventions")
-              .select(
-                `
-              id, titre, description, statut, date_prevue,
-              clients ( id, nom_complet ),
-              utilisateurs ( id, nom_complet, role )
-            `,
-              )
-              .eq("entreprise_id", entId)
-              .order("date_prevue", { ascending: false }),
-            supabase
-              .from("clients")
-              .select("id, nom_complet")
-              .eq("entreprise_id", entId)
-              .order("nom_complet"),
-            supabase
-              .from("utilisateurs")
-              .select("id, nom_complet, role")
-              .eq("entreprise_id", entId)
-              .order("nom_complet"),
-          ]);
-
-        if (interventionsRes.error) throw interventionsRes.error;
-        if (clientsRes.error) throw clientsRes.error;
-        if (techniciensRes.error) throw techniciensRes.error;
-
+        setEntrepriseId(result.entrepriseId || null);
         setInterventions(
-          interventionsRes.data as unknown as InterventionWithRelations[],
+          (result.interventions as unknown as InterventionWithRelations[]) ||
+            [],
         );
-        setClients(clientsRes.data);
-        setTechniciens(techniciensRes.data);
+        setClients(result.clients as ClientRow[]);
+        setTechniciens(result.techniciens as TechnicienRow[]);
       } catch (error: unknown) {
         const err = error as Error;
         console.error("Pipeline Error [fetchInitialData]:", err);
@@ -190,7 +162,7 @@ export default function InterventionsPage() {
   };
 
   // =========================================================================
-  // LOGIQUE D'ENREGISTREMENT
+  // LOGIQUE D'ENREGISTREMENT VIA SQL
   // =========================================================================
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -210,17 +182,14 @@ export default function InterventionsPage() {
       };
 
       if (editingId) {
-        const { error } = await supabase
-          .from("interventions")
-          .update(payload)
-          .eq("id", editingId);
-        if (error) throw error;
+        // 📍 SQL UPDATE
+        const result = await updateInterventionSQL(editingId, payload);
+        if (!result.success) throw new Error(result.error);
         toast.success("Intervention mise à jour.");
       } else {
-        const { error } = await supabase
-          .from("interventions")
-          .insert([payload]);
-        if (error) throw error;
+        // 📍 SQL INSERT
+        const result = await createInterventionSQL(payload);
+        if (!result.success) throw new Error(result.error);
         toast.success("Intervention planifiée avec succès !");
       }
 

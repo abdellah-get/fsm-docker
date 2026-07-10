@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "../../../utils/supabase/client";
+import { getParametresSQL, updateParametresSQL } from "./actions"; // 👈 Nos actions SQL
 import {
   Building2,
   FileText,
@@ -13,11 +14,8 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-// import Modal from "../../../components/ui/Modal"; // Retiré si non utilisé
-// import Select from "../../../components/ui/Select"; // Retiré si non utilisé
-// import Textarea from "../../../components/ui/Textarea"; // Retiré si non utilisé
 
-// 📍 NOUVEAU : Import de ton composant Twilio
+// 📍 Import de ton composant Twilio
 import TwilioSettings from "../../../components/dashboard/TwilioSettings";
 
 // =========================================================================
@@ -60,46 +58,27 @@ export default function ParametresPage() {
         data: { session },
         error: sessionError,
       } = await supabase.auth.getSession();
+
       if (sessionError) throw sessionError;
       if (!session)
         throw new Error("Aucune session active. Veuillez vous reconnecter.");
 
-      const { data: profile, error: profileError } = await supabase
-        .from("utilisateurs")
-        .select("entreprise_id")
-        .eq("id", session.user.id)
-        .single();
+      // 📍 NOUVEAU : On utilise notre action SQL au lieu de Supabase
+      const result = await getParametresSQL(session.user.id);
 
-      if (profileError) {
-        throw new Error(
-          `Erreur table 'utilisateurs' : ${profileError.message}`,
-        );
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      if (!profile?.entreprise_id) {
-        throw new Error("Votre compte n'est lié à aucune entreprise.");
-      }
+      setEntrepriseId(result.entrepriseId);
 
-      setEntrepriseId(profile.entreprise_id);
-
-      const { data: entreprise, error: entError } = await supabase
-        .from("entreprises")
-        .select("*")
-        .eq("id", profile.entreprise_id)
-        .maybeSingle();
-
-      if (entError) {
-        const errorMessage = entError.message || JSON.stringify(entError);
-        throw new Error(`Erreur table 'entreprises' : ${errorMessage}`);
-      }
-
-      if (entreprise) {
+      if (result.data) {
         setFormData({
-          nom: entreprise.nom || "",
-          ice: entreprise.ice || "",
-          rc: entreprise.rc || "",
-          if_fiscal: entreprise.if_fiscal || "",
-          patente: entreprise.patente || "",
+          nom: result.data.nom || "",
+          ice: result.data.ice || "",
+          rc: result.data.rc || "",
+          if_fiscal: result.data.if_fiscal || "",
+          patente: result.data.patente || "",
         });
       }
     } catch (error) {
@@ -138,12 +117,10 @@ export default function ParametresPage() {
         patente: formData.patente.trim(),
       };
 
-      const { error } = await supabase
-        .from("entreprises")
-        .update(payload)
-        .eq("id", entrepriseId);
+      // 📍 NOUVEAU : On utilise notre action SQL pour la mise à jour
+      const result = await updateParametresSQL(entrepriseId, payload);
 
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error);
 
       toast.success("Paramètres mis à jour avec succès !");
     } catch (error) {
@@ -168,9 +145,8 @@ export default function ParametresPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
-      {" "}
-      {/* 📍 NOUVEAU : space-y-8 pour aérer */}
       <Toaster position="top-right" />
+
       {/* --- EN-TÊTE --- */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -181,6 +157,7 @@ export default function ParametresPage() {
           Gérez les informations légales et vos intégrations tierces.
         </p>
       </div>
+
       {/* --- FORMULAIRE D'IDENTITÉ LÉGALE --- */}
       <form
         onSubmit={handleSubmit}
@@ -268,7 +245,8 @@ export default function ParametresPage() {
           </Button>
         </div>
       </form>
-      {/* 📍 NOUVEAU : INTÉGRATION DU COMPOSANT TWILIO ICI */}
+
+      {/* 📍 INTÉGRATION DU COMPOSANT TWILIO ICI */}
       {entrepriseId && (
         <div className="mt-8">
           <TwilioSettings entrepriseId={entrepriseId} />

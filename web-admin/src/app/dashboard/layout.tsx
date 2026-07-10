@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
+import { getProfileLayoutSQL } from "./actions"; // 👈 Import de notre action SQL
 import {
   LayoutDashboard,
   FileText,
@@ -28,31 +29,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
-  // --- RÉCUPÉRATION DU PROFIL (La sécurité est gérée par le middleware) ---
+  // --- RÉCUPÉRATION DU PROFIL VIA SQL ---
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        // 1. On garde Supabase pour vérifier le token de session
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        // Si pas de session, on ne fait rien, le middleware va s'occuper de rediriger vers /login
+        // Si pas de session, le middleware gérera la redirection vers /login
         if (!session) return;
 
-        const { data: profile, error } = await supabase
-          .from("utilisateurs")
-          .select("role, nom_complet")
-          .eq("id", session.user.id)
-          .single();
+        // 2. 📍 Appel à notre serveur Node.js (SQL) au lieu du cloud Supabase !
+        const result = await getProfileLayoutSQL(session.user.id);
 
-        if (error) {
-          console.error("Erreur lecture profil :", error);
+        if (!result.success) {
+          console.error("Erreur lecture profil :", result.error);
           return;
         }
 
-        if (profile) {
-          setRole(profile.role);
-          setUserName(profile.nom_complet || "");
+        if (result.profile) {
+          setRole(result.profile.role);
+          setUserName(result.profile.nom_complet || "");
         }
       } catch (err) {
         console.error("Erreur inattendue layout :", err);
@@ -86,7 +85,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     const inactiveClass =
       "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-700 dark:hover:text-gray-100";
 
-    return `${baseClass} ${pathname === path ? activeClass : inactiveClass}`;
+    // Vérifie si le chemin commence par la base pour gérer les sous-routes (ex: /dashboard/factures/123)
+    // Sauf pour le dashboard racine ("/")
+    const isActive =
+      path === "/dashboard"
+        ? pathname === "/dashboard"
+        : pathname.startsWith(path);
+
+    return `${baseClass} ${isActive ? activeClass : inactiveClass}`;
   };
 
   // ⏳ Écran de chargement UI (Très court)

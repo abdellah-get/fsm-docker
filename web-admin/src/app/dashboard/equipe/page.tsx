@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "../../../utils/supabase/client";
-import { createTechnicianAction } from "../../actions/equipe";
+import {
+  createTechnicianAction,
+  getEquipeDataAction,
+} from "../../actions/equipe"; // 👈 On importe la nouvelle action
 import {
   Plus,
   Wrench,
@@ -46,29 +49,22 @@ export default function EquipePage() {
   const fetchEquipeData = useCallback(async () => {
     try {
       setLoading(true);
+
+      // 1. On récupère la session via Supabase Auth
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data: profile } = await supabase
-        .from("utilisateurs")
-        .select("entreprise_id")
-        .eq("id", session.user.id)
-        .single();
+      // 2. On interroge notre base de données locale via l'action SQL
+      const result = await getEquipeDataAction(session.user.id);
 
-      if (!profile) return;
-      setEntrepriseId(profile.entreprise_id);
-
-      const { data, error } = await supabase
-        .from("utilisateurs")
-        .select("id, nom_complet, telephone, role")
-        .eq("entreprise_id", profile.entreprise_id)
-        .eq("role", "TECHNICIEN")
-        .order("nom_complet", { ascending: true });
-
-      if (error) throw error;
-      setTechniciens(data || []);
+      if (result.success && result.entrepriseId) {
+        setEntrepriseId(result.entrepriseId);
+        setTechniciens(result.techniciens || []);
+      } else {
+        console.error("Erreur retournée par l'action:", result.error);
+      }
     } catch (error) {
       console.error("Erreur récupération équipe:", error);
     } finally {
@@ -77,11 +73,7 @@ export default function EquipePage() {
   }, [supabase]);
 
   useEffect(() => {
-    const loadEquipe = async () => {
-      await fetchEquipeData();
-    };
-
-    loadEquipe();
+    fetchEquipeData();
   }, [fetchEquipeData]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -120,6 +112,8 @@ export default function EquipePage() {
         telephone: "",
       });
       setIsModalOpen(false);
+
+      // On rafraîchit la liste après la création
       await fetchEquipeData();
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -209,7 +203,7 @@ export default function EquipePage() {
         </table>
       </div>
 
-      {/* ✅ MODAL AVEC COMPOSANT MODAL */}
+      {/* MODAL AVEC COMPOSANT MODAL */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

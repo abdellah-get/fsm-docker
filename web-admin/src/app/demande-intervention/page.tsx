@@ -5,6 +5,7 @@ import { createClient } from "../../utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Input, Textarea } from "../../components/ui";
 import dynamic from "next/dynamic";
+import { createDemandeSQL } from "./actions"; // 👈 Import de l'action SQL
 
 const MapPicker = dynamic(() => import("./MapPicker"), {
   ssr: false,
@@ -70,7 +71,6 @@ export default function FormulaireClient() {
         setMapPosition([lat, lng]);
         setShowMap(true);
 
-        // Convertir les coordonnées GPS en adresse texte
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
@@ -147,7 +147,6 @@ export default function FormulaireClient() {
   // --- 📸 FONCTION 2 : GESTION DES PHOTOS ---
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // Limiter à 2 photos maximum pour ne pas surcharger le stockage
       const selectedFiles = Array.from(e.target.files).slice(0, 2);
       setPhotos(selectedFiles);
     }
@@ -174,7 +173,7 @@ export default function FormulaireClient() {
         throw new Error("Veuillez remplir tous les champs obligatoires.");
       }
 
-      // --- UPLOAD DES PHOTOS DANS SUPABASE STORAGE ---
+      // --- 1. UPLOAD DES PHOTOS DANS SUPABASE STORAGE ---
       let uploadedPhotoUrls: string[] = [];
       if (photos.length > 0) {
         for (const photo of photos) {
@@ -197,26 +196,25 @@ export default function FormulaireClient() {
         }
       }
 
-      // --- INSERTION DANS LA BASE DE DONNÉES ---
-      const { error } = await supabase.from("demandes").insert([
-        {
-          entreprise_id: entrepriseId,
-          nom_complet: nom_complet,
-          telephone: telephone,
-          email: email || null,
-          adresse: adresseText,
-          latitude: mapPosition ? mapPosition[0] : null,
-          longitude: mapPosition ? mapPosition[1] : null,
-          titre: titre,
-          description: description || null,
-          date_disponibilite: date_disponibilite || null,
-          preference_horaire: preference_horaire || null,
-          photos: uploadedPhotoUrls, // Les URLs des images qu'on vient d'uploader
-          statut: "EN_ATTENTE",
-        },
-      ]);
+      // --- 2. 📍 INSERTION DANS LA BASE DE DONNÉES (VIA SQL) ---
+      const payload = {
+        entreprise_id: entrepriseId,
+        nom_complet: nom_complet,
+        telephone: telephone,
+        email: email || null,
+        adresse: adresseText,
+        latitude: mapPosition ? mapPosition[0] : null,
+        longitude: mapPosition ? mapPosition[1] : null,
+        titre: titre,
+        description: description || null,
+        date_disponibilite: date_disponibilite || null,
+        preference_horaire: preference_horaire || null,
+        photos: uploadedPhotoUrls, // Les URLs générées à l'étape précédente
+      };
 
-      if (error) throw error;
+      const result = await createDemandeSQL(payload);
+
+      if (!result.success) throw new Error(result.error);
 
       setSuccess(true);
       setAdresseText("");

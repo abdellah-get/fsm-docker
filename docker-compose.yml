@@ -7,12 +7,14 @@ services:
     container_name: fsm-db
     restart: always
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: fsm_db
+    ports:
+      - "5433:5432"
     volumes:
-      # Le fameux volume pour ne pas perdre les données !
       - db-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - fsm-network
 
@@ -24,20 +26,20 @@ services:
     container_name: fsm-web
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000"
+    env_file:
+      - ./web-admin/.env.local
     environment:
-      # L'application se connecte au conteneur "db" grâce au réseau
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - DATABASE_URL=postgresql://admin:admin@db:5432/fsm_db
+      - LOCAL_DATABASE_URL=postgresql://admin:admin@db:5432/fsm_db
     depends_on:
       - db
     networks:
       - fsm-network
 
-# Déclaration du réseau interne
 networks:
   fsm-network:
     driver: bridge
 
-# Déclaration du volume persistant
 volumes:
   db-data:

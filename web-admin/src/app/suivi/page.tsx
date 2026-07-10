@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "../../utils/supabase/client";
 import { Button, Input } from "../../components/ui";
 import { Loader2, Search, PhoneCall } from "lucide-react";
+import { getDemandesByPhoneSQL } from "./actions"; // 👈 Import de notre action serveur SQL
 
 interface DemandeRow {
   id: string;
@@ -51,8 +51,6 @@ function StatutBadge({ statut }: { statut: string }) {
 }
 
 export default function SuiviPage() {
-  const supabase = createClient();
-
   const [telephone, setTelephone] = useState("");
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -73,15 +71,14 @@ export default function SuiviPage() {
     try {
       setLoading(true);
 
-      const { data, error: queryError } = await supabase
-        .from("demandes")
-        .select("id, titre, description, statut, created_at")
-        .eq("telephone", cleanedPhone)
-        .order("created_at", { ascending: false });
+      // 📍 Appel direct à PostgreSQL via notre action serveur !
+      const result = await getDemandesByPhoneSQL(cleanedPhone);
 
-      if (queryError) throw queryError;
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
-      setDemandes(data || []);
+      setDemandes((result.data as DemandeRow[]) || []);
       setSearched(true);
     } catch (err) {
       console.error("Erreur recherche demandes:", err);

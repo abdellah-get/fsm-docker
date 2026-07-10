@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "../../../utils/supabase/server"; // Utilise ton client serveur
+import pool from "../../../lib/db"; // Import de ta connexion Postgres centralisée
 import twilio from "twilio";
 
 export async function POST(request: Request) {
@@ -13,16 +13,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = await createClient();
+    // 1. Récupérer les clés Twilio spécifiques à cette entreprise (Version SQL)
+    const query = `
+      SELECT twilio_account_sid, twilio_auth_token, twilio_whatsapp_number 
+      FROM entreprises 
+      WHERE id = $1
+    `;
+    const result = await pool.query(query, [entrepriseId]);
 
-    // 1. Récupérer les clés Twilio spécifiques à cette entreprise
-    const { data: entreprise, error: entError } = await supabase
-      .from("entreprises")
-      .select("twilio_account_sid, twilio_auth_token, twilio_whatsapp_number")
-      .eq("id", entrepriseId)
-      .single();
+    // result.rows[0] correspond exactement au .single() de Supabase
+    const entreprise = result.rows[0];
 
-    if (entError || !entreprise) {
+    // Si le tableau est vide, l'entreprise n'existe pas
+    if (!entreprise) {
       return NextResponse.json(
         { error: "Entreprise introuvable ou non configurée." },
         { status: 404 },
