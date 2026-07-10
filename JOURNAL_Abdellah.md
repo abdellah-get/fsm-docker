@@ -1,4 +1,4 @@
-# JOURNAL DE BORD - STAGE WELANCE (Abdellah ANECLOUB)
+# JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
 ## Le 10 Juillet
 
