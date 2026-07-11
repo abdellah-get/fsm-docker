@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react";
 import { genererBonInterventionPDF } from "../../../utils/pdfGenerator";
 import Link from "next/link";
 import SignatureCanvas from "react-signature-canvas";
@@ -42,8 +42,6 @@ interface InterventionMobile {
 }
 
 export default function MesInterventionsPage() {
-  const supabase = createClient();
-
   const signatureClientRef = useRef<SignatureCanvas>(null);
   const signatureTechRef = useRef<SignatureCanvas>(null);
 
@@ -69,15 +67,15 @@ export default function MesInterventionsPage() {
       try {
         if (showSpinner) setLoading(true);
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) throw new Error("Non authentifié.");
+        // Récupérer la session via NextAuth 100% local
+        const session = await getSession();
+        if (!session || !session.user) throw new Error("Non authentifié.");
 
-        setUserId(session.user.id);
+        const currentUserId = (session.user as any).id;
+        setUserId(currentUserId);
 
         // Appel SQL
-        const result = await getMyInterventionsSQL(session.user.id);
+        const result = await getMyInterventionsSQL(currentUserId);
         if (!result.success) throw new Error(result.error);
 
         setInterventions(
@@ -89,7 +87,7 @@ export default function MesInterventionsPage() {
         if (showSpinner) setLoading(false);
       }
     },
-    [supabase],
+    [], // <-- Le tableau de dépendances est maintenant vide
   );
 
   useEffect(() => {
@@ -228,7 +226,7 @@ export default function MesInterventionsPage() {
     setActionLoadingId(selectedInterventionId);
 
     try {
-      // 1. Upload des images vers le Storage Supabase (on garde ça car le stockage est cloud)
+      // 1. On récupère directement le format texte (Base64) généré par le canvas
       const clientDataUrl = signatureClientRef.current
         ?.getTrimmedCanvas()
         .toDataURL("image/png");
@@ -239,33 +237,14 @@ export default function MesInterventionsPage() {
       if (!clientDataUrl || !techDataUrl)
         throw new Error("Erreur rendu signatures");
 
-      const blobClient = dataURLtoBlob(clientDataUrl);
-      const blobTech = dataURLtoBlob(techDataUrl);
-      const pathClient = `${userId}/${selectedInterventionId}_client.png`;
-      const pathTech = `${userId}/${selectedInterventionId}_tech.png`;
-
-      await supabase.storage.from("signatures").upload(pathClient, blobClient, {
-        contentType: "image/png",
-        upsert: true,
-      });
-      const urlClient = supabase.storage
-        .from("signatures")
-        .getPublicUrl(pathClient).data.publicUrl;
-
-      await supabase.storage
-        .from("signatures")
-        .upload(pathTech, blobTech, { contentType: "image/png", upsert: true });
-      const urlTech = supabase.storage.from("signatures").getPublicUrl(pathTech)
-        .data.publicUrl;
-
       const texteRapport =
         rapportsSaisis[selectedInterventionId]?.trim() || null;
 
-      // 2. Transaction SQL (Intervention + Facture)
+      // 2. Transaction SQL : On envoie les signatures directement en texte !
       const payload = {
         compte_rendu: texteRapport,
-        signature_client: urlClient,
-        signature_technicien: urlTech,
+        signature_client: clientDataUrl, // Plus besoin d'URL Supabase
+        signature_technicien: techDataUrl, // Plus besoin d'URL Supabase
         prix_valide_a:
           interventionConcernee.montant_final &&
           !interventionConcernee.prix_valide_a
@@ -298,6 +277,7 @@ export default function MesInterventionsPage() {
 
       setSelectedInterventionId(null);
     } catch (error) {
+      // ... la suite reste identique (le catch)
       console.error("Erreur clôture :", error);
       // Rollback UI
       setInterventions((prev) =>

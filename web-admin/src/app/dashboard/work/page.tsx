@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react";
 import { getWorkHistorySQL } from "./actions"; // 👈 NOUVEAU : Import de l'action SQL
 import Select from "../../../components/ui/Select";
 import Button from "../../../components/ui/Button";
@@ -24,8 +24,6 @@ interface InterventionTerminee {
 const ITEMS_PER_PAGE = 10;
 
 export default function WorkHistoryPage() {
-  const supabase = createClient();
-
   const [interventions, setInterventions] = useState<InterventionTerminee[]>(
     [],
   );
@@ -100,17 +98,17 @@ export default function WorkHistoryPage() {
         if (isInitialFetch) setLoadingInitial(true);
         else setLoadingMore(true);
 
-        // On utilise toujours Supabase pour l'authentification
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) return;
+        // 🟢 NOUVEAU : On utilise getSession de NextAuth au lieu de Supabase
+        const session = await getSession();
+        if (!session || !session.user) return;
+
+        const currentUserId = (session.user as any).id;
 
         const from = pageIndex * ITEMS_PER_PAGE;
 
-        // 📍 NOUVEAU : On appelle notre fonction SQL !
+        // 📍 On appelle notre fonction SQL en passant l'ID du tech !
         const result = await getWorkHistorySQL(
-          session.user.id,
+          currentUserId,
           from,
           ITEMS_PER_PAGE,
         );
@@ -133,7 +131,7 @@ export default function WorkHistoryPage() {
         setLoadingMore(false);
       }
     },
-    [supabase],
+    [], // <-- Remove 'supabase' from dependencies
   );
 
   useEffect(() => {
