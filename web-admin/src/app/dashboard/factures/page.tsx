@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
-import { createClient } from "../../../utils/supabase/client";
-import { getFacturesDataSQL, createFactureSQL } from "./actions"; // 👈 On importe nos actions SQL
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase par NextAuth
+import { getFacturesDataSQL, createFactureSQL } from "./actions";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import Button from "../../../components/ui/Button";
@@ -37,7 +37,7 @@ interface InterventionOption {
 }
 
 export default function FacturationPage() {
-  const supabase = createClient();
+  // ❌ createClient() de Supabase a été supprimé ici !
 
   // --- ÉTATS ---
   const [factures, setFactures] = useState<FactureRow[]>([]);
@@ -55,18 +55,15 @@ export default function FacturationPage() {
   });
 
   // =========================================================================
-  // PIPELINE DE CHARGEMENT VIA SQL
+  // PIPELINE DE CHARGEMENT VIA SQL & NEXTAUTH
   // =========================================================================
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
-      // 1. Récupération de la session via Supabase Auth
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError || !session) throw new Error("Session introuvable.");
+      // 1. Récupération de la session via NextAuth (100% local)
+      const session = await getSession();
+      if (!session || !session.user) throw new Error("Session introuvable.");
 
       // 2. Appel de l'action SQL pour récupérer toutes les données
       const result = await getFacturesDataSQL(session.user.id);
@@ -85,7 +82,7 @@ export default function FacturationPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []); // 👈 Supabase a été retiré des dépendances
 
   useEffect(() => {
     const initData = async () => {

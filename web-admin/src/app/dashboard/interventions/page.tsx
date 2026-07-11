@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase par NextAuth
 import {
   getInterventionsDataSQL,
   createInterventionSQL,
   updateInterventionSQL,
-} from "./actions"; // 👈 On importe nos actions SQL
+} from "./actions";
 import Link from "next/link";
 import {
   CalendarClock,
@@ -53,7 +53,7 @@ interface InterventionWithRelations {
 }
 
 export default function InterventionsPage() {
-  const supabase = createClient();
+  // ❌ L'appel à createClient() de Supabase a été supprimé ici !
 
   // --- ÉTATS DES DONNÉES ---
   const [interventions, setInterventions] = useState<
@@ -87,16 +87,13 @@ export default function InterventionsPage() {
       try {
         if (showSpinner) setLoading(true);
 
-        // 1. On vérifie la session Auth Supabase
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+        // 1. On vérifie la session via NextAuth (100% local et sécurisé)
+        const session = await getSession();
 
-        if (sessionError || !session)
+        if (!session || !session.user)
           throw new Error("Utilisateur non authentifié.");
 
-        // 2. On récupère tout d'un coup via notre Action Serveur SQL
+        // 2. On récupère tout via notre Action Serveur SQL en passant l'ID NextAuth
         const result = await getInterventionsDataSQL(session.user.id);
 
         if (!result.success) throw new Error(result.error);
@@ -116,7 +113,7 @@ export default function InterventionsPage() {
         if (showSpinner) setLoading(false);
       }
     },
-    [supabase],
+    [], // 👈 Supabase retiré des dépendances
   );
 
   useEffect(() => {
@@ -182,12 +179,10 @@ export default function InterventionsPage() {
       };
 
       if (editingId) {
-        // 📍 SQL UPDATE
         const result = await updateInterventionSQL(editingId, payload);
         if (!result.success) throw new Error(result.error);
         toast.success("Intervention mise à jour.");
       } else {
-        // 📍 SQL INSERT
         const result = await createInterventionSQL(payload);
         if (!result.success) throw new Error(result.error);
         toast.success("Intervention planifiée avec succès !");
@@ -204,9 +199,6 @@ export default function InterventionsPage() {
     }
   }
 
-  // =========================================================================
-  // RENDU UI
-  // =========================================================================
   const renderStatusBadge = (statut: string) => {
     switch (statut) {
       case "CLOTUREE":
@@ -241,7 +233,6 @@ export default function InterventionsPage() {
     );
   }
 
-  // Options pour les selects
   const clientOptions = clients.map((c) => ({
     value: c.id,
     label: c.nom_complet,
@@ -269,8 +260,8 @@ export default function InterventionsPage() {
             Planification des Interventions
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Supervisez attribution des tâches et le planning technique en temps
-            réel.
+            Supervisez l'attribution des tâches et le planning technique en
+            temps réel.
           </p>
         </div>
 
@@ -370,12 +361,10 @@ export default function InterventionsPage() {
                         <Link
                           href={`/dashboard/interventions/${item.id}/bon-intervention`}
                           className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-medium text-sm transition-colors bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 hover:border-emerald-200 dark:hover:border-emerald-700 px-3 py-1.5 rounded-lg shadow-sm"
-                          title="Afficher le bon d'intervention"
                         >
                           <Printer className="w-4 h-4" />
                           Bon
                         </Link>
-
                         <button
                           onClick={() => openEditModal(item)}
                           className="inline-flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium text-sm transition-colors bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 hover:border-emerald-200 dark:hover:border-emerald-800 px-3 py-1.5 rounded-lg shadow-sm"
@@ -393,7 +382,6 @@ export default function InterventionsPage() {
         </div>
       </div>
 
-      {/* ✅ MODAL AVEC COMPOSANT MODAL */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -434,17 +422,13 @@ export default function InterventionsPage() {
               }
               required
             />
-
             <Select
               label="Technicien"
               options={technicienOptions}
               placeholder="-- Non assigné --"
               value={formData.technicien_id}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  technicien_id: e.target.value,
-                })
+                setFormData({ ...formData, technicien_id: e.target.value })
               }
             />
           </div>
@@ -459,7 +443,6 @@ export default function InterventionsPage() {
               }
               required
             />
-
             <Select
               label="Statut"
               options={statutOptions}

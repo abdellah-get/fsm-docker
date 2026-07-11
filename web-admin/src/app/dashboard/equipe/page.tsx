@@ -1,25 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "../../../utils/supabase/client";
-import {
-  createTechnicianAction,
-  getEquipeDataAction,
-} from "../../actions/equipe"; // 👈 On importe la nouvelle action
-import {
-  Plus,
-  Wrench,
-  X,
-  Loader2,
-  Mail,
-  Lock,
-  User,
-  Phone,
-} from "lucide-react";
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase par NextAuth
+import { createTechnicianActionSQL, getEquipeDataSQL } from "./actions"; // 👈 Import de nos actions SQL locales
+import { Plus, Wrench, Loader2, Mail, Lock, User, Phone } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import Textarea from "../../../components/ui/Textarea";
 import Modal from "../../../components/ui/Modal";
 
 interface TechnicienRow {
@@ -30,7 +17,7 @@ interface TechnicienRow {
 }
 
 export default function EquipePage() {
-  const supabase = createClient();
+  // ❌ Supabase supprimé d'ici !
 
   const [techniciens, setTechniciens] = useState<TechnicienRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,39 +28,35 @@ export default function EquipePage() {
 
   const [formData, setFormData] = useState({
     nom_complet: "",
+    telephone: "",
     email: "",
     mot_de_passe: "",
-    telephone: "",
   });
 
   const fetchEquipeData = useCallback(async () => {
     try {
       setLoading(true);
 
-      // 1. On récupère la session via Supabase Auth
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
+      // 1. Récupération de la session NextAuth
+      const session = await getSession();
+      if (!session || !session.user) throw new Error("Session introuvable.");
 
-      // 2. On interroge notre base de données locale via l'action SQL
-      const result = await getEquipeDataAction(session.user.id);
+      // 2. Récupération des données d'équipe via SQL
+      const result = await getEquipeDataSQL(session.user.id);
+      if (!result.success) throw new Error(result.error);
 
-      if (result.success && result.entrepriseId) {
-        setEntrepriseId(result.entrepriseId);
-        setTechniciens(result.techniciens || []);
-      } else {
-        console.error("Erreur retournée par l'action:", result.error);
-      }
-    } catch (error) {
-      console.error("Erreur récupération équipe:", error);
+      setEntrepriseId(result.entrepriseId || null);
+      setTechniciens((result.techniciens as TechnicienRow[]) || []);
+    } catch (error: any) {
+      console.error("Erreur de chargement équipe :", error);
+      toast.error(error.message || "Erreur lors du chargement de l'équipe.");
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []); // 👈 Dépendance à Supabase retirée
 
   useEffect(() => {
-    fetchEquipeData();
+    void fetchEquipeData();
   }, [fetchEquipeData]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -85,73 +68,75 @@ export default function EquipePage() {
       return;
     }
 
-    if (formData.mot_de_passe.length < 6) {
-      setFormError("Le mot de passe doit contenir au moins 6 caractères.");
-      return;
-    }
-
     try {
       setSubmitLoading(true);
 
-      const result = await createTechnicianAction({
-        email: formData.email.trim(),
-        mot_de_passe: formData.mot_de_passe,
+      const payload = {
+        entreprise_id: entrepriseId,
         nom_complet: formData.nom_complet.trim(),
         telephone: formData.telephone.trim(),
-        entreprise_id: entrepriseId,
-      });
+        email: formData.email.trim(),
+        mot_de_passe: formData.mot_de_passe,
+      };
+
+      // 📍 Appel de l'action SQL locale
+      const result = await createTechnicianActionSQL(payload);
 
       if (!result.success) {
-        throw new Error(result.error);
+        setFormError(result.error || "Une erreur est survenue.");
+        return;
       }
 
+      toast.success("Compte Technicien créé avec succès !");
+      setIsModalOpen(false);
       setFormData({
         nom_complet: "",
+        telephone: "",
         email: "",
         mot_de_passe: "",
-        telephone: "",
       });
-      setIsModalOpen(false);
 
-      // On rafraîchit la liste après la création
+      // Recharger le tableau
       await fetchEquipeData();
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setFormError(error.message);
-      } else {
-        setFormError("Erreur lors de la création du compte.");
-      }
+    } catch (error: any) {
+      console.error("Erreur de soumission :", error);
+      setFormError(error.message || "Échec de l'enregistrement.");
     } finally {
       setSubmitLoading(false);
     }
   }
 
-  if (loading && techniciens.length === 0) {
+  if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400" />
+      <div className="flex items-center justify-center min-h-96">
+        <Loader2
+          className="animate-spin text-emerald-600 dark:text-emerald-400"
+          size={32}
+        />
+        <p className="ml-2 text-gray-500 dark:text-gray-400 font-medium">
+          Chargement des effectifs...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-6">
+      <Toaster position="top-right" />
+
+      {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Wrench className="text-emerald-600 dark:text-emerald-400" />
-            Gestion Équipe
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Gestion de l'Équipe
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Créez les comptes professionnels de vos techniciens intervention.
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Créez et gérez les comptes d'accès de vos techniciens de terrain.
           </p>
         </div>
 
         <Button
-          onClick={() => {
-            setFormError(null);
-            setIsModalOpen(true);
-          }}
+          onClick={() => setIsModalOpen(true)}
           icon={<Plus size={16} />}
           variant="primary"
         >
@@ -164,9 +149,9 @@ export default function EquipePage() {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-dark-700 text-left text-sm">
           <thead className="bg-gray-50 dark:bg-dark-900/50 text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">
             <tr>
-              <th className="px-6 py-4">Nom du technicien</th>
-              <th className="px-6 py-4">Téléphone</th>
-              <th className="px-6 py-4">Rôle</th>
+              <th className="px-6 py-3">Nom du collaborateur</th>
+              <th className="px-6 py-3">Téléphone</th>
+              <th className="px-6 py-3">Rôle système</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-dark-700 text-gray-700 dark:text-gray-300">
@@ -174,25 +159,29 @@ export default function EquipePage() {
               <tr>
                 <td
                   colSpan={3}
-                  className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
+                  className="px-6 py-10 text-center text-gray-400 dark:text-gray-500"
                 >
-                  Aucun technicien enregistré dans votre équipe.
+                  Aucun technicien enregistré pour le moment.
                 </td>
               </tr>
             ) : (
               techniciens.map((tech) => (
                 <tr
                   key={tech.id}
-                  className="hover:bg-gray-50 dark:hover:bg-dark-700/50"
+                  className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors"
                 >
-                  <td className="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
+                  <td className="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold">
+                      {tech.nom_complet.charAt(0).toUpperCase()}
+                    </div>
                     {tech.nom_complet}
                   </td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                  <td className="px-6 py-4 font-mono text-gray-600 dark:text-gray-400">
                     {tech.telephone}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 text-xs font-medium px-2.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 flex items-center gap-1 w-fit">
+                      <Wrench size={12} />
                       {tech.role}
                     </span>
                   </td>
@@ -203,24 +192,24 @@ export default function EquipePage() {
         </table>
       </div>
 
-      {/* MODAL AVEC COMPOSANT MODAL */}
+      {/* MODAL AJOUT TECHNICIEN */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Créer un Accès Technicien"
+        title="Créer un compte Technicien"
         maxWidth="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {formError && (
-            <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="text-xs text-red-800 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
               {formError}
             </div>
           )}
 
           <Input
-            label="Nom Complet"
+            label="Nom complet du technicien"
             icon={<User size={16} />}
-            placeholder="Ex: Jean Dupont"
+            placeholder="Ex: Ahmed Alami"
             value={formData.nom_complet}
             onChange={(e) =>
               setFormData({ ...formData, nom_complet: e.target.value })
@@ -229,10 +218,9 @@ export default function EquipePage() {
           />
 
           <Input
-            label="Téléphone"
+            label="Numéro de téléphone"
             icon={<Phone size={16} />}
-            type="tel"
-            placeholder="Ex: 06 XX XX XX XX"
+            placeholder="Ex: +212 600 000000"
             value={formData.telephone}
             onChange={(e) =>
               setFormData({ ...formData, telephone: e.target.value })
@@ -267,7 +255,7 @@ export default function EquipePage() {
             helper="À communiquer au technicien pour sa première connexion."
           />
 
-          <div className="pt-4 flex justify-end gap-3">
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 dark:border-dark-700">
             <Button
               type="button"
               variant="secondary"

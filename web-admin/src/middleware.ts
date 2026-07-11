@@ -1,17 +1,13 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "./utils/supabase/middleware";
-
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
-}
+export { default } from "next-auth/middleware";
 
 export const config = {
   matcher: [
     /*
-     * Matcher pour intercepter toutes les routes sauf :
-     * - Les fichiers statiques (_next/static, _next/image, favicon.ico)
-     * - Les images ou icônes du projet (.svg, .png, etc.)
+     * Matcher pour intercepter toutes les routes SAUF :
+     * - Les fichiers statiques et images
+     * - La page de login (/login) pour ne pas bloquer les utilisateurs non connectés
+     * - Les routes API (/api/...) pour laisser passer les requêtes d'authentification
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|login|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

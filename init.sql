@@ -53,7 +53,9 @@ CREATE TABLE IF NOT EXISTS "public"."utilisateurs" (
     "current_lat" double precision,
     "current_lng" double precision,
     "email" "text",
-    CONSTRAINT "utilisateurs_pkey" PRIMARY KEY ("id")
+    "password_hash" "text",
+    CONSTRAINT "utilisateurs_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "utilisateurs_email_key" UNIQUE ("email")
 );
 
 -- Table Clients

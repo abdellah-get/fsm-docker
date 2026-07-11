@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "../../utils/supabase/client";
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase
 import Link from "next/link";
-import { getDashboardDataSQL } from "./actions"; // 👈 On importe l'action Serveur
+import { getDashboardDataSQL } from "./actions";
 
-// On importe nos composants et les interfaces associées
 import RecentInvoicesTable, {
   FactureDbRow,
 } from "../../components/dashboard/RecentInvoicesTable";
@@ -14,7 +13,6 @@ import PendingRequestsCard, {
 } from "../../components/dashboard/PendingRequestsCard";
 
 export default function DashboardPage() {
-  const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [noProfile, setNoProfile] = useState(false);
   const [entrepriseId, setEntrepriseId] = useState<string | null>(null);
@@ -33,14 +31,12 @@ export default function DashboardPage() {
       try {
         setLoading(true);
 
-        // 1. Vérification de la session Auth
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
+        // 1. Vérification de la session Auth (100% Local avec NextAuth)
+        const session = await getSession();
+        if (!session || !session.user) return;
 
-        // 2. Appel de l'action SQL qui s'occupe de TOUT
-        const result = await getDashboardDataSQL(user.id);
+        // 2. Appel de ton action SQL qui s'occupe de TOUT
+        const result = await getDashboardDataSQL(session.user.id);
 
         if (!result.success) {
           if (result.noProfile) {
@@ -51,7 +47,7 @@ export default function DashboardPage() {
           return;
         }
 
-        // 3. On met à jour l'interface avec les données prêtes à l'emploi !
+        // 3. On met à jour l'interface
         setEntrepriseId(result.entrepriseId);
         setStats(
           result.stats || {
@@ -72,7 +68,7 @@ export default function DashboardPage() {
     }
 
     fetchDashboardData();
-  }, [supabase]);
+  }, []);
 
   // =====================================================================
   // 📍 FONCTION : Envoi WhatsApp (Inchangée)

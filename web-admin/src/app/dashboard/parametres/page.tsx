@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase par NextAuth
 import { getParametresSQL, updateParametresSQL } from "./actions"; // 👈 Nos actions SQL
 import {
   Building2,
@@ -31,7 +31,7 @@ interface EntrepriseData {
 }
 
 export default function ParametresPage() {
-  const supabase = createClient();
+  // ❌ Supabase supprimé d'ici !
 
   // --- ÉTATS SÉCURISÉS ---
   const [loading, setLoading] = useState<boolean>(true);
@@ -48,29 +48,27 @@ export default function ParametresPage() {
   });
 
   // =========================================================================
-  // PIPELINE DE CHARGEMENT SÉCURISÉ AVEC DIAGNOSTIC AVANCÉ
+  // PIPELINE DE CHARGEMENT SÉCURISÉ AVEC NEXTAUTH
   // =========================================================================
   const fetchEntrepriseData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+      // 1. Récupération de l'utilisateur via NextAuth (100% Local)
+      const session = await getSession();
 
-      if (sessionError) throw sessionError;
-      if (!session)
+      if (!session || !session.user) {
         throw new Error("Aucune session active. Veuillez vous reconnecter.");
+      }
 
-      // 📍 NOUVEAU : On utilise notre action SQL au lieu de Supabase
+      // 2. On utilise notre action SQL
       const result = await getParametresSQL(session.user.id);
 
       if (!result.success) {
         throw new Error(result.error);
       }
 
-      setEntrepriseId(result.entrepriseId);
+      setEntrepriseId(result.entrepriseId || null);
 
       if (result.data) {
         setFormData({
@@ -89,7 +87,7 @@ export default function ParametresPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []); // 👈 Dépendance à supabase retirée
 
   useEffect(() => {
     const initData = async () => {

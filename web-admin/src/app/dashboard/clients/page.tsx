@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase par NextAuth
+import {
+  getEntrepriseIdSQL,
+  getClientsSQL,
+  createClientSQL,
+  updateClientSQL,
+  deleteClientSQL,
+} from "./actions"; // 👈 On importe nos actions SQL
+
 import {
   Search,
   Plus,
@@ -30,7 +38,7 @@ interface ClientRow {
 }
 
 export default function ClientsPage() {
-  const supabase = createClient();
+  // ❌ L'appel à createClient() a été supprimé ici !
 
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -40,7 +48,6 @@ export default function ClientsPage() {
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [formError, setFormError] = useState<string | null>(null);
-
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -54,47 +61,36 @@ export default function ClientsPage() {
     try {
       setLoading(true);
 
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError || !session) throw new Error("Session introuvable.");
+      // 1. Récupérer la session via NextAuth
+      const session = await getSession();
+      if (!session || !session.user) throw new Error("Session introuvable.");
 
-      const { data: profile, error: profileError } = await supabase
-        .from("utilisateurs")
-        .select("entreprise_id")
-        .eq("id", session.user.id)
-        .single();
-
-      if (profileError || !profile)
+      // 2. Récupérer l'ID de l'entreprise (ou l'utiliser directement si tu l'as mis dans la session NextAuth)
+      const entResult = await getEntrepriseIdSQL(session.user.id);
+      if (!entResult.success || !entResult.entrepriseId) {
         throw new Error("Liaison entreprise manquante.");
+      }
 
-      const entId = profile.entreprise_id;
+      const entId = entResult.entrepriseId;
       setEntrepriseId(entId);
 
-      const { data, error: clientsError } = await supabase
-        .from("clients")
-        .select(
-          "id, nom_complet, email, telephone, adresse_geographique, created_at",
-        )
-        .eq("entreprise_id", entId)
-        .order("nom_complet", { ascending: true });
+      // 3. Récupérer les clients via l'action SQL
+      const clientsResult = await getClientsSQL(entId);
+      if (!clientsResult.success) throw new Error(clientsResult.error);
 
-      if (clientsError) throw clientsError;
-      setClients(data || []);
+      setClients((clientsResult.clients as ClientRow[]) || []);
     } catch (error) {
-      console.error("Pipeline Error [fetchClientsData]:", error);
+      console.error("Erreur [fetchClientsData]:", error);
       toast.error("Erreur lors du chargement des clients");
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []); // 👈 Dépendance à Supabase retirée
 
   useEffect(() => {
     const initData = async () => {
       await fetchClientsData();
     };
-
     initData();
   }, [fetchClientsData]);
 
@@ -159,17 +155,18 @@ export default function ClientsPage() {
       };
 
       if (editingClientId) {
-        const { error } = await supabase
-          .from("clients")
-          .update(payload)
-          .eq("id", editingClientId)
-          .eq("entreprise_id", entrepriseId);
-
-        if (error) throw error;
+        // 📍 Mise à jour via l'action SQL
+        const result = await updateClientSQL(
+          editingClientId,
+          entrepriseId,
+          payload,
+        );
+        if (!result.success) throw new Error(result.error);
         toast.success("Profil client mis à jour avec succès !");
       } else {
-        const { error } = await supabase.from("clients").insert([payload]);
-        if (error) throw error;
+        // 📍 Création via l'action SQL
+        const result = await createClientSQL(payload);
+        if (!result.success) throw new Error(result.error);
         toast.success("Nouveau client ajouté à la base !");
       }
 
@@ -192,25 +189,20 @@ export default function ClientsPage() {
       `⚠️ Êtes-vous sûr de vouloir supprimer définitivement le client "${nom}" ?\nToutes les données associées pourraient être impactées.`,
     );
 
-    if (!isConfirmed) return;
+    if (!isConfirmed || !entrepriseId) return;
 
     try {
       setLoading(true);
-      const { error } = await supabase
-        .from("clients")
-        .delete()
-        .eq("id", id)
-        .eq("entreprise_id", entrepriseId);
 
-      if (error) throw error;
+      // 📍 Suppression via l'action SQL
+      const result = await deleteClientSQL(id, entrepriseId);
+      if (!result.success) throw new Error(result.error);
 
       await fetchClientsData();
       toast.success(`Le client ${nom} a été supprimé.`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur de suppression:", error);
-      toast.error(
-        "Impossible de supprimer ce client. Des factures y sont sûrement liées.",
-      );
+      toast.error(error.message || "Impossible de supprimer ce client.");
     } finally {
       setLoading(false);
     }
@@ -346,7 +338,6 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* ✅ MODAL AVEC COMPOSANT MODAL */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

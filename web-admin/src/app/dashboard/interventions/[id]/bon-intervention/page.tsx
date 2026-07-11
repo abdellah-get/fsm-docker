@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, use } from "react";
-import { createClient } from "../../../../../utils/supabase/client";
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase par NextAuth
 import { Printer, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import Button from "../../../../../components/ui/Button";
-import { getBonInterventionDataSQL } from "./actions"; // 👈 Import de l'action SQL
+import { getBonInterventionDataSQL } from "./actions";
 
 // Définition des interfaces
 interface ClientRelation {
@@ -46,7 +46,7 @@ interface BonInterventionProps {
 }
 
 export default function BonInterventionPage({ params }: BonInterventionProps) {
-  const supabase = createClient();
+  // ❌ Supabase supprimé d'ici !
 
   const unwrappedParams = use(params);
   const id = unwrappedParams.id;
@@ -60,14 +60,14 @@ export default function BonInterventionPage({ params }: BonInterventionProps) {
     try {
       setLoading(true);
 
-      // 1. Récupération de l'utilisateur connecté via Supabase Auth
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) {
+      // 1. Récupération de l'utilisateur connecté via NextAuth (100% Local)
+      const session = await getSession();
+      if (!session || !session.user) {
         throw new Error("Vous devez être connecté pour voir ce document.");
       }
 
       // 2. Appel de l'action Serveur SQL pour récupérer les données et le rôle
-      const result = await getBonInterventionDataSQL(id, authData.user.id);
+      const result = await getBonInterventionDataSQL(id, session.user.id);
 
       if (!result.success) {
         throw new Error(result.error);
@@ -88,7 +88,7 @@ export default function BonInterventionPage({ params }: BonInterventionProps) {
     } finally {
       setLoading(false);
     }
-  }, [id, supabase]);
+  }, [id]); // 👈 Dépendance à supabase retirée
 
   useEffect(() => {
     const init = async () => {
