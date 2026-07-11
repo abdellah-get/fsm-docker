@@ -1,5 +1,15 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+## Le 11 Juillet
+
+- \*\*Ce que j'ai fait : Grosse victoire aujourd'hui ! J'ai enfin réussi à faire fonctionner l'authentification 100% en local avec NextAuth et notre base PostgreSQL. J'ai pris le temps de rédiger un fichier README.md super clair pour que mon binôme puisse initialiser la base de données via notre init.sql et se créer son propre compte. J'ai sécurisé tout ça en faisant un push de mon travail sur la branche jalon2-POSTGRESQL. Ensuite, j'ai pris une décision radicale : éradiquer totalement Supabase du projet pour qu'on soit 100% indépendants. J'ai modifié le code des pages "Mes Interventions" et "Work" pour qu'elles utilisent les sessions NextAuth au lieu de l'authentification Supabase, et j'ai modifié les colonnes de signatures en TEXT via DBeaver pour stocker les images directement en Base64.
+
+- \*\*Ce qui me bloque : Actuellement plus rien, mais j'ai eu mon lot de sueurs froides ! Le plus gros piège a été le mot de passe : j'avais inséré un faux hash au hasard en base de données, ce qui me bloquait l'accès. J'ai dû apprendre à générer un vrai hash bcrypt (avec le préfixe $2a$) directement via mon terminal Node.js. J'ai aussi eu droit à des erreurs fatales parce que j'avais supprimé les clés Supabase de mon .env.local alors que certaines pages technicien essayaient encore de s'y connecter. Côté environnement, DBeaver m'a fait une belle frayeur avec une erreur "Connection refused" (mon conteneur Docker était juste éteint... 🤦‍♂️), et j'ai dû batailler avec un conflit de port car le 3000 était occupé. J'ai dû migrer l'app et la variable NEXTAUTH_URL sur le port 3001 puis 3006.
+
+- \*\*Ce que je vais faire ensuite : M'assurer que mon binôme arrive bien à récupérer la branche via Git, lancer son Docker et se connecter en suivant mon guide README. Une fois que l'environnement local fonctionne parfaitement chez lui aussi, on pourra valider ce Jalon et attaquer la suite l'esprit tranquille !
+
+Temps passé : 4h
+
 ## Le 10 Juillet
 
 - **Ce que j'ai fait :** Grosse avancée sur le Jalon 2 ! Suite à mes recherches de la veille, j'ai modifié le code de l'application Next.js pour abandonner complètement le client `Supabase` en ligne et passer sur des requêtes SQL directes vers `PostgreSQL`. J'ai commit tout ce nouveau code proprement sur une nouvelle branche GitHub dédiée (`jalon2-POSTGRESQL`). J'ai aussi fait quelques essais de mon côté pour lancer la base de données dans un conteneur Docker avec `docker-compose` afin de tester mon code, même si la configuration officielle de la DB reste la tâche de mon binôme Yousef.
