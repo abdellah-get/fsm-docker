@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package*.json ./
 # On utilise 'npm ci' qui est plus rapide et strict que 'npm install' en production
-RUN npm ci
+RUN npm install
 
 # ==========================================
 # ÉTAPE 2 : Construction (Build)
