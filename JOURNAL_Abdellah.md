@@ -1,6 +1,37 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
-Le 12 Juillet (ou la date du jour)
+### Bilan du jalon 3 : Automatiser les tests et la construction
+
+**Dates :** 12 Juillet 2026
+
+- **Objectif rappelé en une phrase :** Mettre en place un pipeline d'Intégration Continue (CI/CD) pour exécuter automatiquement nos tests et construire notre image Docker à chaque modification, afin de garantir que l'on ne fusionne jamais de code cassé.
+
+- **Ce que nous avons réalisé :**
+  - **Côté Yousef :** Il a posé d'excellentes fondations en créant le fichier de workflow GitHub Actions (`ci.yml`). Il a configuré l'installation de Node.js, le cache npm pour accélérer le processus, et a écrit le premier test unitaire "volontairement cassé" (1+1=3) pour vérifier que le pipeline bloquait bien en cas d'erreur.
+  - **De mon côté :** J'ai finalisé l'intégration. J'ai remplacé les tests basiques par un vrai test de logique métier en créant une fonction de calcul de TVA (`calculs.ts`) pour tester l'application en conditions réelles. J'ai également finalisé la configuration pour que l'image Docker soit poussée sur le GitHub Container Registry (GHCR) uniquement lors d'une fusion sur la branche `main`. Enfin, j'ai généré et ajouté le badge de statut CI tout en haut de notre `README.md`.
+
+- **Preuves (captures, journaux, liens) :**
+  - **Lien du workflow :** https://github.com/abdellah-get/fsm-docker/actions
+  - **Lien de l'image publiée :** https://github.com/abdellah-get/fsm-docker/pkgs/container/fsm-docker
+  - **Capture d'une exécution réussie :** ![Pipeline au vert](./captures/ci-success.png)
+  - **Preuve de l'échec suivi de la correction :** ![Pipeline en échec](./captures/ci-echec.png)
+
+- **Critères validés :**
+  - [x] Une pull request déclenche le pipeline, et celui-ci passe au vert.
+  - [x] Quand un test est cassé volontairement, le pipeline échoue.
+  - [x] L'image Docker est bien publiée sur le registre GHCR.
+  - [x] Le badge de statut est visible dans le README.
+
+- **Difficultés rencontrées et solutions :**
+  - **Le piège du navigateur :** Je voulais initialement tester notre fichier `pdfGenerator.ts`, mais je me suis rendu compte que la librairie PDF dépendait du navigateur. Lancer ce test sur les serveurs aveugles de GitHub aurait fait planter le pipeline. **Solution :** J'ai créé une fonction utilitaire (`calculs.ts`) purement algorithmique, facile et sûre à tester.
+  - **Sécuriser la publication Docker :** Il fallait s'assurer que l'image ne se publie pas si le code est cassé. **Solution :** Nous avons bien compris et utilisé l'instruction `needs: test` dans notre fichier YAML pour créer une dépendance stricte entre les étapes.
+
+- **Questions en attente :** Aucune pour l'instant.
+
+- **Temps passé et prochaines étapes :** Environ 4h
+  - **Prochaine étape :** puis attaquer le Jalon 4 :Sécuriser la chaîne.
+
+## Le 12 Juillet
 
 - **Ce que j'ai fait :** Finalisation de la partie CI/CD pour le Jalon 3 ! Mon binôme avait super bien préparé le terrain avec la structure du fichier ci.yml, donc je me suis concentré sur l'intégration finale. J'ai remplacé les tests basiques "bouche-trou" par de vrais tests unitaires liés à notre application. J'ai créé un fichier calculs.ts dans le dossier utils pour tester notre logique métier. J'ai aussi généré et intégré le badge de statut dynamique GitHub Actions au tout début de notre README.md. J'ai push tout ça proprement sur une nouvelle branche pour vérifier que tout fonctionne avant d'envoyer sur main.
 
@@ -8,9 +39,9 @@ Le 12 Juillet (ou la date du jour)
 
 - **Ce que je vais faire ensuite :** Ouvrir une Pull Request pour fusionner ma branche vers main. C'est ça qui déclenchera la vraie magie : je vais surveiller que le pipeline passe bien au vert, que mon badge sur le README se met à jour, et surtout, je vais aller récupérer le lien de notre image Docker qui sera automatiquement poussée sur le registre GHCR. Il ne restera plus qu'à réunir les liens et les captures pour le bilan.
 
-- **Temps passé :** 3h (beaucoup d'exploration et de lecture pour bien comprendre les coulisses des serveurs GitHub Actions).
+- **Temps passé :** 2h (beaucoup d'exploration et de lecture pour bien comprendre les coulisses des serveurs GitHub Actions).
 
-## Jalon 2 : Mettre l'application dans des conteneurs
+### Bilan du Jalon 2 : Mettre l'application dans des conteneurs
 
 **Dates :** du 08 Juillet au 11 Juillet
 
