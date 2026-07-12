@@ -1,0 +1,80 @@
+name: Pipeline CI/CD
+
+# Quand ce pipeline doit-il se déclencher ?
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+# Variables globales
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ---------------------------------------------------
+  # TÂCHE 1 : TESTS
+  # ---------------------------------------------------
+  test:
+    name: 🧪 Tests & Vérifications
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web-admin # On se place dans le dossier web pour npm
+
+    steps:
+      - name: 🛎️ Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm" # Mise en cache pour accélérer le pipeline
+          cache-dependency-path: "./web-admin/package-lock.json"
+
+      - name: 📦 Installer les dépendances
+        run: npm ci
+
+      - name: 🧪 Lancer les tests
+        run: npm run test
+
+  # ---------------------------------------------------
+  # TÂCHE 2 : CONSTRUCTION DE L'IMAGE DOCKER
+  # ---------------------------------------------------
+  build-and-push:
+    name: 🐳 Construction & Publication Docker
+    needs: test # Ne s'exécute QUE si les tests (ci-dessus) réussissent !
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 🛎️ Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Connexion au registre GitHub (GHCR)
+        # On ne se connecte pas si c'est juste une proposition de modification (PR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Préparer les tags de l'image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: 🚀 Construire et Pousser l'image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web-admin
+          # On ne publie la nouvelle image que lorsqu'on fusionne sur "main"
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
