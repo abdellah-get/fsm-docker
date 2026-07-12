@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "../../../../utils/supabase/client";
+import { getSession } from "next-auth/react";
+import { getDemandeDataSQL, assignTechnicienSQL } from "./actions"; // 👈 Import de nos actions
 import Button from "../../../../components/ui/Button";
 import Select from "../../../../components/ui/Select";
 import { Phone, MapPin, Loader2, CheckCircle } from "lucide-react";
@@ -26,7 +27,6 @@ interface TechnicienOption {
 }
 
 export default function DetailDemandePage() {
-  const supabase = createClient();
   const router = useRouter();
   const params = useParams();
   const demandeId = params.id as string;
@@ -41,39 +41,21 @@ export default function DetailDemandePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
+        // 1. Authentification 100% locale via NextAuth
+        const session = await getSession();
+        if (!session || !session.user) return;
 
-        const { data: profile } = await supabase
-          .from("utilisateurs")
-          .select("entreprise_id")
-          .eq("id", user.id)
-          .maybeSingle();
+        const currentUserId = (session.user as any).id;
 
-        if (!profile) throw new Error("Profil introuvable.");
+        // 2. Fetch des données via notre Action SQL en utilisant l'ID NextAuth !
+        const result = await getDemandeDataSQL(demandeId, currentUserId);
 
-        const [demandeRes, techniciensRes] = await Promise.all([
-          supabase
-            .from("demandes")
-            .select("*")
-            .eq("id", demandeId)
-            .eq("entreprise_id", profile.entreprise_id)
-            .single(),
-          supabase
-            .from("utilisateurs")
-            .select("id, nom_complet")
-            .eq("entreprise_id", profile.entreprise_id)
-            .eq("role", "TECHNICIEN")
-            .eq("is_active", true),
-        ]);
+        if (!result.success) {
+          throw new Error(result.error);
+        }
 
-        if (demandeRes.error) throw demandeRes.error;
-        if (techniciensRes.error) throw techniciensRes.error;
-
-        setDemande(demandeRes.data);
-        setTechniciens(techniciensRes.data || []);
+        setDemande(result.demande);
+        setTechniciens(result.techniciens || []);
       } catch (err) {
         console.error("Erreur chargement demande:", err);
         setError("Impossible de charger cette demande.");
@@ -83,8 +65,9 @@ export default function DetailDemandePage() {
     };
 
     fetchData();
-  }, [supabase, demandeId]);
+  }, [demandeId]);
 
+  // 🟢 LA CORRECTION EST ICI : La fonction est bien sur une nouvelle ligne !
   const handleAssigner = async () => {
     if (!demande || !selectedTechnicienId) return;
 
@@ -92,69 +75,14 @@ export default function DetailDemandePage() {
       setAssigning(true);
       setError(null);
 
-      // 1. Chercher si un client avec ce telephone existe deja pour cette entreprise
-      const { data: clientExistant, error: clientSearchError } = await supabase
-        .from("clients")
-        .select("id")
-        .eq("entreprise_id", demande.entreprise_id)
-        .eq("telephone", demande.telephone)
-        .limit(1)
-        .maybeSingle();
+      // 📍 Appel de notre transaction SQL pour l'assignation !
+      const result = await assignTechnicienSQL(demande, selectedTechnicienId);
 
-      if (clientSearchError) throw clientSearchError;
-
-      let clientId = clientExistant?.id;
-
-      // 2. Si aucun client trouve, on le cree a partir des infos de la demande
-      if (!clientId) {
-        const { data: nouveauClient, error: clientCreateError } = await supabase
-          .from("clients")
-          .insert([
-            {
-              entreprise_id: demande.entreprise_id,
-              nom_complet: demande.nom_complet,
-              telephone: demande.telephone,
-              email: demande.email,
-              adresse_geographique: demande.adresse || "Adresse non renseignee",
-            },
-          ])
-          .select("id")
-          .single();
-
-        if (clientCreateError) throw clientCreateError;
-        clientId = nouveauClient.id;
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      // 3. Creer l'intervention de travail, liee au client et au technicien
-      const { error: interventionError } = await supabase
-        .from("interventions")
-        .insert([
-          {
-            entreprise_id: demande.entreprise_id,
-            client_id: clientId,
-            technicien_id: selectedTechnicienId,
-            titre: demande.titre,
-            description: demande.description,
-            statut: "A_FAIRE",
-            date_prevue: new Date().toISOString(),
-          },
-        ]);
-
-      if (interventionError) throw interventionError;
-
-      // 4. Marquer la demande comme assignee, on garde la trace historique
-      const { error: updateDemandeError } = await supabase
-        .from("demandes")
-        .update({
-          statut: "ASSIGNEE",
-          technicien_id: selectedTechnicienId,
-        })
-        .eq("id", demande.id);
-
-      if (updateDemandeError) throw updateDemandeError;
-
-      // 5. MODIFICATION : Force la mise à jour des données en vidant le cache client Next.js
-      // Force un rechargement complet de l'application pour purger la mémoire de Next.js
+      // Force le rafraîchissement complet
       window.location.href = "/dashboard";
     } catch (err) {
       console.error("Erreur assignation:", err);

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { createClient } from "../../utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Input, Textarea } from "../../components/ui";
 import dynamic from "next/dynamic";
+import { createDemandeSQL } from "./actions"; // 👈 Import de l'action SQL
 
 const MapPicker = dynamic(() => import("./MapPicker"), {
   ssr: false,
@@ -15,8 +15,17 @@ const MapPicker = dynamic(() => import("./MapPicker"), {
   ),
 });
 
+// 🟢 NOUVEAU : Fonction utilitaire pour convertir un fichier image en texte Base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export default function FormulaireClient() {
-  const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const entrepriseId = searchParams.get("entreprise_id");
@@ -70,7 +79,6 @@ export default function FormulaireClient() {
         setMapPosition([lat, lng]);
         setShowMap(true);
 
-        // Convertir les coordonnées GPS en adresse texte
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
@@ -147,7 +155,6 @@ export default function FormulaireClient() {
   // --- 📸 FONCTION 2 : GESTION DES PHOTOS ---
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // Limiter à 2 photos maximum pour ne pas surcharger le stockage
       const selectedFiles = Array.from(e.target.files).slice(0, 2);
       setPhotos(selectedFiles);
     }
@@ -174,49 +181,34 @@ export default function FormulaireClient() {
         throw new Error("Veuillez remplir tous les champs obligatoires.");
       }
 
-      // --- UPLOAD DES PHOTOS DANS SUPABASE STORAGE ---
-      const uploadedPhotoUrls: string[] = [];
+      // --- 1. 🟢 NOUVEAU : CONVERSION DES PHOTOS EN BASE64 LOCALEMENT ---
+      let processedPhotosBase64: string[] = [];
       if (photos.length > 0) {
         for (const photo of photos) {
-          const fileExt = photo.name.split(".").pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `${entrepriseId}/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("photos_interventions")
-            .upload(filePath, photo);
-
-          if (uploadError)
-            throw new Error("Erreur lors de l'envoi des photos.");
-
-          const { data: publicUrlData } = supabase.storage
-            .from("photos_interventions")
-            .getPublicUrl(filePath);
-
-          uploadedPhotoUrls.push(publicUrlData.publicUrl);
+          const base64String = await fileToBase64(photo);
+          processedPhotosBase64.push(base64String);
         }
       }
 
-      // --- INSERTION DANS LA BASE DE DONNÉES ---
-      const { error } = await supabase.from("demandes").insert([
-        {
-          entreprise_id: entrepriseId,
-          nom_complet: nom_complet,
-          telephone: telephone,
-          email: email || null,
-          adresse: adresseText,
-          latitude: mapPosition ? mapPosition[0] : null,
-          longitude: mapPosition ? mapPosition[1] : null,
-          titre: titre,
-          description: description || null,
-          date_disponibilite: date_disponibilite || null,
-          preference_horaire: preference_horaire || null,
-          photos: uploadedPhotoUrls, // Les URLs des images qu'on vient d'uploader
-          statut: "EN_ATTENTE",
-        },
-      ]);
+      // --- 2. 📍 INSERTION DANS LA BASE DE DONNÉES (VIA SQL) ---
+      const payload = {
+        entreprise_id: entrepriseId,
+        nom_complet: nom_complet,
+        telephone: telephone,
+        email: email || null,
+        adresse: adresseText,
+        latitude: mapPosition ? mapPosition[0] : null,
+        longitude: mapPosition ? mapPosition[1] : null,
+        titre: titre,
+        description: description || null,
+        date_disponibilite: date_disponibilite || null,
+        preference_horaire: preference_horaire || null,
+        photos: processedPhotosBase64, // 👈 Les photos sont maintenant envoyées sous forme de texte long !
+      };
 
-      if (error) throw error;
+      const result = await createDemandeSQL(payload);
+
+      if (!result.success) throw new Error(result.error);
 
       setSuccess(true);
       setAdresseText("");

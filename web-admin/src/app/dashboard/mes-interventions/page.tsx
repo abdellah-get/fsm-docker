@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react";
 import { genererBonInterventionPDF } from "../../../utils/pdfGenerator";
 import Link from "next/link";
 import SignatureCanvas from "react-signature-canvas";
@@ -9,6 +9,15 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Modal from "../../../components/ui/Modal";
 import Textarea from "../../../components/ui/Textarea";
+
+// 📍 IMPORT DES ACTIONS SQL
+import {
+  getMyInterventionsSQL,
+  updateLocationSQL,
+  updateInterventionPrixSQL,
+  demarrerInterventionSQL,
+  cloturerInterventionSQL,
+} from "./actions";
 
 // =========================================================================
 // TYPES & INTERFACES
@@ -27,15 +36,12 @@ interface InterventionMobile {
     longitude: number | null;
   } | null;
   signature_client: string | null;
-  signature_technicien: string | null; // 🌟 AJOUT : Signature du technicien
+  signature_technicien: string | null;
   montant_final: number | null;
   prix_valide_a: string | null;
 }
 
 export default function MesInterventionsPage() {
-  const supabase = createClient();
-
-  // 🌟 AJOUT : Deux références séparées pour les deux signatures
   const signatureClientRef = useRef<SignatureCanvas>(null);
   const signatureTechRef = useRef<SignatureCanvas>(null);
 
@@ -54,73 +60,57 @@ export default function MesInterventionsPage() {
   >(null);
 
   // =========================================================================
-  // CHARGEMENT DES DONNÉES
+  // CHARGEMENT DES DONNÉES (VIA SQL)
   // =========================================================================
   const fetchMyInterventions = useCallback(
     async (showSpinner = true) => {
       try {
         if (showSpinner) setLoading(true);
 
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-        if (sessionError || !session) throw new Error("Non authentifié.");
+        // Récupérer la session via NextAuth 100% local
+        const session = await getSession();
+        if (!session || !session.user) throw new Error("Non authentifié.");
 
-        setUserId(session.user.id);
+        const currentUserId = (session.user as any).id;
+        setUserId(currentUserId);
 
-        const { data, error } = await supabase
-          .from("interventions")
-          .select(
-            `
-            id, titre, description, statut, date_prevue, compte_rendu, signature_client, signature_technicien,
-            montant_final, prix_valide_a,
-            clients ( nom_complet ),
-            demandes ( adresse, latitude, longitude )
-            `,
-          )
-          .eq("technicien_id", session.user.id)
-          .neq("statut", "CLOTUREE")
-          .order("date_prevue", { ascending: true });
+        // Appel SQL
+        const result = await getMyInterventionsSQL(currentUserId);
+        if (!result.success) throw new Error(result.error);
 
-        if (error) throw error;
-        setInterventions(data as unknown as InterventionMobile[]);
+        setInterventions(
+          (result.data as unknown as InterventionMobile[]) || [],
+        );
       } catch (error) {
         console.error("Erreur chargement missions :", error);
       } finally {
         if (showSpinner) setLoading(false);
       }
     },
-    [supabase],
+    [], // <-- Le tableau de dépendances est maintenant vide
   );
 
   useEffect(() => {
     let isMounted = true;
+
     const initPage = async () => {
-      await Promise.resolve();
-      if (isMounted) fetchMyInterventions();
+      if (isMounted) await fetchMyInterventions();
     };
     initPage();
 
-    const interventionsChannel = supabase
-      .channel("realtime-interventions-technicien")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "interventions" },
-        () => {
-          if (isMounted) fetchMyInterventions(false);
-        },
-      )
-      .subscribe();
+    // Polling (rafraîchissement toutes les 10 secondes au lieu du WebSocket Supabase)
+    const intervalId = setInterval(() => {
+      if (isMounted) fetchMyInterventions(false);
+    }, 10000);
 
     return () => {
       isMounted = false;
-      supabase.removeChannel(interventionsChannel);
+      clearInterval(intervalId);
     };
-  }, [fetchMyInterventions, supabase]);
+  }, [fetchMyInterventions]);
 
   // =========================================================================
-  // TRACKING GPS
+  // TRACKING GPS (VIA SQL)
   // =========================================================================
   const hasMissionEnCours = interventions.some(
     (inv) => inv.statut === "EN_COURS",
@@ -133,17 +123,14 @@ export default function MesInterventionsPage() {
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        await supabase
-          .from("utilisateurs")
-          .update({ current_lat: latitude, current_lng: longitude })
-          .eq("id", userId);
+        await updateLocationSQL(userId, latitude, longitude); // Appel SQL
       },
       (err) => console.error("Erreur GPS :", err.message),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [userId, hasMissionEnCours, supabase]);
+  }, [userId, hasMissionEnCours]);
 
   const dataURLtoBlob = (dataURL: string) => {
     const arr = dataURL.split(",");
@@ -158,7 +145,7 @@ export default function MesInterventionsPage() {
   };
 
   // =========================================================================
-  // ACTIONS METIER
+  // ACTIONS METIER (VIA SQL)
   // =========================================================================
   const handlePrixChange = (id: string, valeur: string) => {
     setPrixSaisis((prev) => ({ ...prev, [id]: valeur }));
@@ -173,11 +160,10 @@ export default function MesInterventionsPage() {
 
     try {
       setActionLoadingId(id);
-      const { error } = await supabase
-        .from("interventions")
-        .update({ montant_final: montant })
-        .eq("id", id);
-      if (error) throw error;
+
+      const result = await updateInterventionPrixSQL(id, montant); // Appel SQL
+      if (!result.success) throw new Error(result.error);
+
       setInterventions((prev) =>
         prev.map((inv) =>
           inv.id === id ? { ...inv, montant_final: montant } : inv,
@@ -194,11 +180,10 @@ export default function MesInterventionsPage() {
   const handleDemarrer = async (id: string) => {
     try {
       setActionLoadingId(id);
-      const { error } = await supabase
-        .from("interventions")
-        .update({ statut: "EN_COURS" })
-        .eq("id", id);
-      if (error) throw error;
+
+      const result = await demarrerInterventionSQL(id); // Appel SQL
+      if (!result.success) throw new Error(result.error);
+
       setInterventions((prev) =>
         prev.map((inv) =>
           inv.id === id ? { ...inv, statut: "EN_COURS" } : inv,
@@ -217,9 +202,8 @@ export default function MesInterventionsPage() {
   };
 
   const handleFinaliserCloture = async () => {
-    if (!selectedInterventionId) return;
+    if (!selectedInterventionId || !userId) return;
 
-    // 🌟 VÉRIFICATION DES DEUX SIGNATURES
     if (
       signatureClientRef.current?.isEmpty() ||
       signatureTechRef.current?.isEmpty()
@@ -242,7 +226,7 @@ export default function MesInterventionsPage() {
     setActionLoadingId(selectedInterventionId);
 
     try {
-      // 🌟 GÉNÉRATION ET UPLOAD DES DEUX IMAGES
+      // 1. On récupère directement le format texte (Base64) généré par le canvas
       const clientDataUrl = signatureClientRef.current
         ?.getTrimmedCanvas()
         .toDataURL("image/png");
@@ -253,78 +237,31 @@ export default function MesInterventionsPage() {
       if (!clientDataUrl || !techDataUrl)
         throw new Error("Erreur rendu signatures");
 
-      const blobClient = dataURLtoBlob(clientDataUrl);
-      const blobTech = dataURLtoBlob(techDataUrl);
-
-      const pathClient = `${userId}/${selectedInterventionId}_client.png`;
-      const pathTech = `${userId}/${selectedInterventionId}_tech.png`;
-
-      // Upload Signature Client
-      await supabase.storage.from("signatures").upload(pathClient, blobClient, {
-        contentType: "image/png",
-        upsert: true,
-      });
-      const urlClient = supabase.storage
-        .from("signatures")
-        .getPublicUrl(pathClient).data.publicUrl;
-
-      // Upload Signature Technicien
-      await supabase.storage
-        .from("signatures")
-        .upload(pathTech, blobTech, { contentType: "image/png", upsert: true });
-      const urlTech = supabase.storage.from("signatures").getPublicUrl(pathTech)
-        .data.publicUrl;
-
       const texteRapport =
         rapportsSaisis[selectedInterventionId]?.trim() || null;
 
-      const updatePayload: Record<string, unknown> = {
-        statut: "CLOTUREE",
+      // 2. Transaction SQL : On envoie les signatures directement en texte !
+      const payload = {
         compte_rendu: texteRapport,
-        signature_client: urlClient,
-        signature_technicien: urlTech, // 🌟 AJOUT PAYLOAD
+        signature_client: clientDataUrl, // Plus besoin d'URL Supabase
+        signature_technicien: techDataUrl, // Plus besoin d'URL Supabase
+        prix_valide_a:
+          interventionConcernee.montant_final &&
+          !interventionConcernee.prix_valide_a
+            ? new Date().toISOString()
+            : null,
       };
 
-      if (
-        interventionConcernee?.montant_final &&
-        !interventionConcernee.prix_valide_a
-      ) {
-        updatePayload.prix_valide_a = new Date().toISOString();
-      }
+      const result = await cloturerInterventionSQL(
+        selectedInterventionId,
+        userId,
+        payload,
+        interventionConcernee.montant_final,
+      );
 
-      const { error: dbError } = await supabase
-        .from("interventions")
-        .update(updatePayload)
-        .eq("id", selectedInterventionId);
-      if (dbError) throw dbError;
+      if (!result.success) throw new Error(result.error);
 
-      // 🌟 GÉNÉRATION FACTURE CONSERVÉE
-      if (interventionConcernee?.montant_final) {
-        const montantTTC = interventionConcernee.montant_final;
-        const montantHT = Math.round((montantTTC / 1.2) * 100) / 100;
-        const dateEcheance = new Date();
-        dateEcheance.setDate(dateEcheance.getDate() + 30);
-
-        const { data: profilTechnicien } = await supabase
-          .from("utilisateurs")
-          .select("entreprise_id")
-          .eq("id", userId)
-          .single();
-
-        if (profilTechnicien?.entreprise_id) {
-          await supabase.from("factures").insert([
-            {
-              entreprise_id: profilTechnicien.entreprise_id,
-              intervention_id: selectedInterventionId,
-              montant_ht: montantHT,
-              taux_tva: 20.0,
-              montant_ttc: montantTTC,
-              statut: "EN_ATTENTE",
-              date_echeance: dateEcheance.toISOString().split("T")[0],
-            },
-          ]);
-        }
-      }
+      // 3. Génération PDF Client
       genererBonInterventionPDF({
         id: selectedInterventionId,
         date: new Date().toLocaleDateString("fr-FR"),
@@ -334,12 +271,15 @@ export default function MesInterventionsPage() {
         adresse: interventionConcernee.demandes?.adresse || "Non renseignée",
         compteRendu: texteRapport || "Aucun compte-rendu saisi.",
         montant: interventionConcernee.montant_final || 0,
-        signatureClientBase64: clientDataUrl, // On utilise directement l'image du canvas !
+        signatureClientBase64: clientDataUrl,
         signatureTechBase64: techDataUrl,
       });
+
       setSelectedInterventionId(null);
     } catch (error) {
+      // ... la suite reste identique (le catch)
       console.error("Erreur clôture :", error);
+      // Rollback UI
       setInterventions((prev) =>
         [...prev, interventionConcernee].sort(
           (a, b) =>
@@ -437,7 +377,7 @@ export default function MesInterventionsPage() {
                 {item.demandes?.latitude && item.demandes?.longitude && (
                   <div className="pt-1 pb-2">
                     <a
-                      href={`https://maps.google.com/?q=$${item.demandes.latitude},${item.demandes.longitude}`}
+                      href={`http://maps.google.com/maps?q=${item.demandes.latitude},${item.demandes.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 text-sm font-medium rounded-lg"
@@ -454,7 +394,7 @@ export default function MesInterventionsPage() {
                 )}
 
                 <div className="pt-2">
-                  {/* 1. SAISIE ET NEGOCIATION DU PRIX */}
+                  {/* 1. SAISIE DU PRIX */}
                   {item.statut === "A_FAIRE" && !prixDejaSaisi && (
                     <div className="space-y-3">
                       <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
@@ -550,7 +490,6 @@ export default function MesInterventionsPage() {
         maxWidth="md"
       >
         <div className="space-y-6">
-          {/* Zone Signature Client */}
           <div className="space-y-2">
             <h4 className="font-semibold text-gray-800 text-sm">
               1. Signature du Client
@@ -574,7 +513,6 @@ export default function MesInterventionsPage() {
 
           <hr className="border-gray-200" />
 
-          {/* Zone Signature Technicien */}
           <div className="space-y-2">
             <h4 className="font-semibold text-gray-800 text-sm">
               2. Signature du Technicien

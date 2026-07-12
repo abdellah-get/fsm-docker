@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react";
+import { getWorkHistorySQL } from "./actions"; // 👈 NOUVEAU : Import de l'action SQL
 import Select from "../../../components/ui/Select";
 import Button from "../../../components/ui/Button";
 import { Loader2, ChevronDown, ClipboardCheck } from "lucide-react";
-// 🌟 NOUVEAU : Import de la fonction de génération de PDF
 import { genererBonInterventionPDF } from "../../../utils/pdfGenerator";
 
 interface InterventionTerminee {
@@ -15,7 +15,6 @@ interface InterventionTerminee {
   prix_valide_a: string | null;
   montant_final: number | null;
   clients: { nom_complet: string } | null;
-  // 🌟 NOUVEAU : Champs requis pour le PDF
   demandes: { adresse: string | null } | null;
   compte_rendu: string | null;
   signature_client: string | null;
@@ -25,8 +24,6 @@ interface InterventionTerminee {
 const ITEMS_PER_PAGE = 10;
 
 export default function WorkHistoryPage() {
-  const supabase = createClient();
-
   const [interventions, setInterventions] = useState<InterventionTerminee[]>(
     [],
   );
@@ -35,15 +32,14 @@ export default function WorkHistoryPage() {
 
   const [loadingInitial, setLoadingInitial] = useState<boolean>(true);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null); // 🌟 État pour le bouton PDF
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const [periode, setPeriode] = useState<string>("tout");
 
   // =========================================================================
-  // FONCTIONS UTILITAIRES
+  // FONCTIONS UTILITAIRES (Inchangées)
   // =========================================================================
 
-  // 🌟 NOUVEAU : Convertit l'URL publique de l'image (Supabase) en Base64 pour jsPDF
   const getBase64FromUrl = async (url: string): Promise<string> => {
     try {
       const response = await fetch(url);
@@ -60,7 +56,6 @@ export default function WorkHistoryPage() {
     }
   };
 
-  // 🌟 NOUVEAU : Déclenche la création du PDF
   const handleDownloadPDF = async (item: InterventionTerminee) => {
     setDownloadingId(item.id);
     try {
@@ -95,7 +90,7 @@ export default function WorkHistoryPage() {
   };
 
   // =========================================================================
-  // CHARGEMENT DES DONNÉES
+  // CHARGEMENT DES DONNÉES VIA SQL
   // =========================================================================
   const fetchWorkHistory = useCallback(
     async (pageIndex: number, isInitialFetch = false) => {
@@ -103,37 +98,28 @@ export default function WorkHistoryPage() {
         if (isInitialFetch) setLoadingInitial(true);
         else setLoadingMore(true);
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) return;
+        // 🟢 NOUVEAU : On utilise getSession de NextAuth au lieu de Supabase
+        const session = await getSession();
+        if (!session || !session.user) return;
+
+        const currentUserId = (session.user as any).id;
 
         const from = pageIndex * ITEMS_PER_PAGE;
-        const to = from + ITEMS_PER_PAGE - 1;
 
-        // 🌟 MODIFICATION : Ajout des colonnes nécessaires au PDF
-        const { data, error } = await supabase
-          .from("interventions")
-          .select(
-            `
-            id, titre, date_prevue, prix_valide_a, montant_final,
-            compte_rendu, signature_client, signature_technicien,
-            clients ( nom_complet ),
-            demandes ( adresse )
-          `,
-          )
-          .eq("technicien_id", session.user.id)
-          .eq("statut", "CLOTUREE")
-          .order("prix_valide_a", { ascending: false })
-          .range(from, to);
+        // 📍 On appelle notre fonction SQL en passant l'ID du tech !
+        const result = await getWorkHistorySQL(
+          currentUserId,
+          from,
+          ITEMS_PER_PAGE,
+        );
 
-        if (error) throw error;
+        if (!result.success) throw new Error(result.error);
 
-        if (data) {
-          if (data.length < ITEMS_PER_PAGE) setHasMore(false);
+        if (result.data) {
+          if (result.data.length < ITEMS_PER_PAGE) setHasMore(false);
           else setHasMore(true);
 
-          const fetchedData = data as unknown as InterventionTerminee[];
+          const fetchedData = result.data as InterventionTerminee[];
           setInterventions((prev) =>
             isInitialFetch ? fetchedData : [...prev, ...fetchedData],
           );
@@ -145,7 +131,7 @@ export default function WorkHistoryPage() {
         setLoadingMore(false);
       }
     },
-    [supabase],
+    [], // <-- Remove 'supabase' from dependencies
   );
 
   useEffect(() => {
@@ -187,7 +173,7 @@ export default function WorkHistoryPage() {
   }, [periode, interventions]);
 
   // =========================================================================
-  // RENDU UI
+  // RENDU UI (Inchangé)
   // =========================================================================
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
@@ -285,7 +271,6 @@ export default function WorkHistoryPage() {
                     </div>
                   </div>
 
-                  {/* 🌟 NOUVEAU : Bouton pour déclencher le téléchargement PDF */}
                   <Button
                     onClick={() => handleDownloadPDF(item)}
                     variant="secondary"

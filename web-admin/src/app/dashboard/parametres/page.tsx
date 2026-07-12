@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase par NextAuth
+import { getParametresSQL, updateParametresSQL } from "./actions"; // 👈 Nos actions SQL
 import {
   Building2,
   FileText,
@@ -13,11 +14,8 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-// import Modal from "../../../components/ui/Modal"; // Retiré si non utilisé
-// import Select from "../../../components/ui/Select"; // Retiré si non utilisé
-// import Textarea from "../../../components/ui/Textarea"; // Retiré si non utilisé
 
-// 📍 NOUVEAU : Import de ton composant Twilio
+// 📍 Import de ton composant Twilio
 import TwilioSettings from "../../../components/dashboard/TwilioSettings";
 
 // =========================================================================
@@ -33,7 +31,7 @@ interface EntrepriseData {
 }
 
 export default function ParametresPage() {
-  const supabase = createClient();
+  // ❌ Supabase supprimé d'ici !
 
   // --- ÉTATS SÉCURISÉS ---
   const [loading, setLoading] = useState<boolean>(true);
@@ -50,56 +48,35 @@ export default function ParametresPage() {
   });
 
   // =========================================================================
-  // PIPELINE DE CHARGEMENT SÉCURISÉ AVEC DIAGNOSTIC AVANCÉ
+  // PIPELINE DE CHARGEMENT SÉCURISÉ AVEC NEXTAUTH
   // =========================================================================
   const fetchEntrepriseData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      if (!session)
+      // 1. Récupération de l'utilisateur via NextAuth (100% Local)
+      const session = await getSession();
+
+      if (!session || !session.user) {
         throw new Error("Aucune session active. Veuillez vous reconnecter.");
-
-      const { data: profile, error: profileError } = await supabase
-        .from("utilisateurs")
-        .select("entreprise_id")
-        .eq("id", session.user.id)
-        .single();
-
-      if (profileError) {
-        throw new Error(
-          `Erreur table 'utilisateurs' : ${profileError.message}`,
-        );
       }
 
-      if (!profile?.entreprise_id) {
-        throw new Error("Votre compte n'est lié à aucune entreprise.");
+      // 2. On utilise notre action SQL
+      const result = await getParametresSQL(session.user.id);
+
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      setEntrepriseId(profile.entreprise_id);
+      setEntrepriseId(result.entrepriseId || null);
 
-      const { data: entreprise, error: entError } = await supabase
-        .from("entreprises")
-        .select("*")
-        .eq("id", profile.entreprise_id)
-        .maybeSingle();
-
-      if (entError) {
-        const errorMessage = entError.message || JSON.stringify(entError);
-        throw new Error(`Erreur table 'entreprises' : ${errorMessage}`);
-      }
-
-      if (entreprise) {
+      if (result.data) {
         setFormData({
-          nom: entreprise.nom || "",
-          ice: entreprise.ice || "",
-          rc: entreprise.rc || "",
-          if_fiscal: entreprise.if_fiscal || "",
-          patente: entreprise.patente || "",
+          nom: result.data.nom || "",
+          ice: result.data.ice || "",
+          rc: result.data.rc || "",
+          if_fiscal: result.data.if_fiscal || "",
+          patente: result.data.patente || "",
         });
       }
     } catch (error) {
@@ -110,7 +87,7 @@ export default function ParametresPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []); // 👈 Dépendance à supabase retirée
 
   useEffect(() => {
     const initData = async () => {
@@ -138,12 +115,10 @@ export default function ParametresPage() {
         patente: formData.patente.trim(),
       };
 
-      const { error } = await supabase
-        .from("entreprises")
-        .update(payload)
-        .eq("id", entrepriseId);
+      // 📍 NOUVEAU : On utilise notre action SQL pour la mise à jour
+      const result = await updateParametresSQL(entrepriseId, payload);
 
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error);
 
       toast.success("Paramètres mis à jour avec succès !");
     } catch (error) {
@@ -168,9 +143,8 @@ export default function ParametresPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
-      {" "}
-      {/* 📍 NOUVEAU : space-y-8 pour aérer */}
       <Toaster position="top-right" />
+
       {/* --- EN-TÊTE --- */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -181,6 +155,7 @@ export default function ParametresPage() {
           Gérez les informations légales et vos intégrations tierces.
         </p>
       </div>
+
       {/* --- FORMULAIRE D'IDENTITÉ LÉGALE --- */}
       <form
         onSubmit={handleSubmit}
@@ -268,7 +243,8 @@ export default function ParametresPage() {
           </Button>
         </div>
       </form>
-      {/* 📍 NOUVEAU : INTÉGRATION DU COMPOSANT TWILIO ICI */}
+
+      {/* 📍 INTÉGRATION DU COMPOSANT TWILIO ICI */}
       {entrepriseId && (
         <div className="mt-8">
           <TwilioSettings entrepriseId={entrepriseId} />

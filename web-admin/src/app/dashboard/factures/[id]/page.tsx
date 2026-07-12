@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, use } from "react";
-import { createClient } from "../../../../utils/supabase/client";
 import Button from "../../../../components/ui/Button";
-import Input from "../../../../components/ui/Input";
-import Modal from "../../../../components/ui/Modal";
-import Select from "../../../../components/ui/Select";
+import { getFactureDetailSQL } from "./actions"; // 👈 Import de notre action SQL
 
 // Types stricts
 interface FactureComplete {
@@ -42,8 +39,6 @@ export default function FacturePDFPage({
   const resolvedParams = use(params);
   const factureId = resolvedParams.id;
 
-  const supabase = createClient();
-
   const [facture, setFacture] = useState<FactureComplete | null>(null);
   const [entreprise, setEntreprise] = useState<EntrepriseInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,63 +53,27 @@ export default function FacturePDFPage({
 
     try {
       setLoading(true);
-      setDebugMessage(
-        "Étape 1 : Recherche de la facture dans la base de données...",
-      );
+      setDebugMessage("Recherche de la facture et de l'entreprise via SQL...");
 
-      const { data: factData, error: factError } = await supabase
-        .from("factures")
-        .select(
-          `
-          id, montant_ht, montant_ttc, taux_tva, date_echeance, created_at, entreprise_id,
-          interventions ( titre, clients ( nom_complet, adresse_geographique, telephone ) )
-        `,
-        )
-        .eq("id", factureId)
-        .maybeSingle();
+      // 📍 Appel de l'action serveur SQL
+      const result = await getFactureDetailSQL(factureId);
 
-      if (factError)
-        throw new Error("Erreur SQL Factures : " + factError.message);
-
-      if (!factData) {
-        setDebugMessage(
-          `⚠️ Blocage : Aucune facture trouvée pour l'ID [${factureId}].`,
-        );
+      if (!result.success) {
+        setDebugMessage(`⚠️ Blocage : ${result.error}`);
         return;
       }
 
-      setFacture(factData as unknown as FactureComplete);
-      setDebugMessage(
-        "Étape 2 : Facture trouvée. Récupération de l'entreprise associée...",
-      );
-
-      if (factData.entreprise_id) {
-        const { data: entData, error: entError } = await supabase
-          .from("entreprises")
-          .select("nom, ice, rc, if_fiscal, patente")
-          .eq("id", factData.entreprise_id)
-          .maybeSingle();
-
-        if (entError)
-          throw new Error("Erreur SQL Entreprises : " + entError.message);
-
-        if (!entData) {
-          setDebugMessage(
-            `⚠️ Blocage : Facture lue avec succès, mais l'entreprise [${factData.entreprise_id}] est introuvable.`,
-          );
-          return;
-        }
-
-        setEntreprise(entData as EntrepriseInfo);
-        setDebugMessage("");
-      }
+      // Si succès, on met à jour les états avec les données SQL
+      setFacture(result.facture as unknown as FactureComplete);
+      setEntreprise(result.entreprise as EntrepriseInfo);
+      setDebugMessage(""); // Efface le message de debug car tout s'est bien passé
     } catch (error) {
       const err = error as Error;
       setDebugMessage("🚨 Crash technique : " + err.message);
     } finally {
       setLoading(false);
     }
-  }, [supabase, factureId]);
+  }, [factureId]);
 
   useEffect(() => {
     const initProcess = async () => {

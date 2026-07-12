@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "../../../utils/supabase/client"; // Ajustez le chemin si besoin
+import { getPositionsSQL } from "./actions"; // 👈 On importe l'action SQL
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -35,48 +35,30 @@ function RecenterMap({
 }
 
 export default function MapGerant() {
-  const supabase = createClient();
   const [techniciens, setTechniciens] = useState<any[]>([]);
-  // Nouvel état pour stocker le technicien sélectionné ("tous" par défaut)
   const [selectedTechId, setSelectedTechId] = useState<string>("tous");
 
   useEffect(() => {
-    // 1. Charger les positions
+    // 1. Fonction pour charger les positions via SQL
     const fetchPositions = async () => {
-      const { data } = await supabase
-        .from("utilisateurs") // Table corrigée
-        .select("id, nom_complet, current_lat, current_lng")
-        .not("current_lat", "is", null);
-      if (data) setTechniciens(data);
+      const data = await getPositionsSQL();
+      setTechniciens(data);
     };
+
+    // Premier chargement immédiat
     fetchPositions();
 
-    // 2. Écouter le temps réel
-    const channel = supabase
-      .channel("suivi_flotte")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "utilisateurs" },
-        (payload) => {
-          setTechniciens((prev) =>
-            prev.map((tech) =>
-              tech.id === payload.new.id
-                ? {
-                    ...tech,
-                    current_lat: payload.new.current_lat,
-                    current_lng: payload.new.current_lng,
-                  }
-                : tech,
-            ),
-          );
-        },
-      )
-      .subscribe();
+    // 2. Le "Temps Réel" version locale (Polling)
+    // On relance la requête SQL toutes les 5 secondes (5000 ms)
+    const intervalId = setInterval(() => {
+      fetchPositions();
+    }, 5000);
 
+    // On nettoie l'intervalle quand on quitte la page
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(intervalId);
     };
-  }, [supabase]);
+  }, []);
 
   // Filtrer les techniciens à afficher sur la carte
   const techniciensAffiches =
@@ -85,16 +67,14 @@ export default function MapGerant() {
       : techniciens.filter((tech) => tech.id === selectedTechId);
 
   // Définir le centre et le zoom de la carte
-  // Par défaut (Maroc), zoom reculé
   let currentCenter: [number, number] = [33.5731, -7.5898];
   let currentZoom = 6;
 
-  // Si on a sélectionné UN technicien, on centre et on zoome sur lui !
   if (selectedTechId !== "tous" && techniciensAffiches.length === 1) {
     const techInfo = techniciensAffiches[0];
     if (techInfo.current_lat && techInfo.current_lng) {
       currentCenter = [techInfo.current_lat, techInfo.current_lng];
-      currentZoom = 14; // Zoom plus rapproché (niveau rue/quartier)
+      currentZoom = 14;
     }
   }
 
@@ -112,7 +92,6 @@ export default function MapGerant() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {/* Bouton pour afficher tout le monde */}
           <button
             onClick={() => setSelectedTechId("tous")}
             className={`w-full text-left px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
@@ -126,7 +105,6 @@ export default function MapGerant() {
 
           <hr className="my-2 border-gray-100" />
 
-          {/* Liste des techniciens individuels */}
           {techniciens.map((tech) => (
             <button
               key={tech.id}
@@ -138,7 +116,6 @@ export default function MapGerant() {
               }`}
             >
               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />{" "}
-              {/* Petit indicateur en direct */}
               <span className="font-medium truncate">{tech.nom_complet}</span>
             </button>
           ))}
@@ -158,7 +135,6 @@ export default function MapGerant() {
           zoom={currentZoom}
           style={{ height: "100%", width: "100%" }}
         >
-          {/* Ce composant invisible sert juste à animer la caméra quand on clique sur le menu */}
           <RecenterMap center={currentCenter} zoom={currentZoom} />
 
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -170,7 +146,7 @@ export default function MapGerant() {
                 <Marker
                   key={tech.id}
                   position={[tech.current_lat, tech.current_lng]}
-                  icon={customIcon} // 🌟 L'ICÔNE EST APPLIQUÉE ICI
+                  icon={customIcon}
                 >
                   <Popup>
                     <div className="text-sm p-1">

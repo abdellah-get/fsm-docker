@@ -1,11 +1,46 @@
-
+version: "3.8"
 
 services:
-  web-admin:
-    build: ./web-admin
-    container_name: saas_web_admin
-    ports:
-      - "3000:3000"
+  # 1. La Base de Données (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: fsm-db
     restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: fsm_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - fsm-network
+
+  # 2. Ton application web (Next.js)
+  web:
+    build:
+      context: ./web-admin
+      dockerfile: Dockerfile
+    container_name: fsm-web
+    restart: always
+    ports:
+      - "3001:3000"
     env_file:
-      - ./web-admin/.env.local # <-- Cette ligne indique à Docker de charger tes clés Supabase
+      - ./web-admin/.env.local
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@db:5432/fsm_db
+      - LOCAL_DATABASE_URL=postgresql://admin:admin@db:5432/fsm_db
+      - NEXTAUTH_URL=http://localhost:3001
+    depends_on:
+      - db
+    networks:
+      - fsm-network
+
+networks:
+  fsm-network:
+    driver: bridge
+
+volumes:
+  db-data:

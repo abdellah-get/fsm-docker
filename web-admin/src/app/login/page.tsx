@@ -2,8 +2,8 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "../../utils/supabase/client";
-import { Lock, Mail, Loader2, Building2 } from "lucide-react";
+import { signIn, getSession } from "next-auth/react"; // 👈 Les nouveaux outils NextAuth
+import { Lock, Mail, Building2 } from "lucide-react";
 import { Button, Input } from "../../components/ui";
 
 export default function LoginPage() {
@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const router = useRouter();
-  const supabase = createClient();
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -21,29 +20,30 @@ export default function LoginPage() {
     setErrorMsg(null);
 
     try {
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      // 1. Authentification via NextAuth (100% Local)
+      // On utilise "credentials" comme défini dans notre route.ts
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false, // On empêche la redirection automatique pour gérer le rôle
+      });
 
-      if (authError || !authData.user) {
-        throw new Error("Identifiants incorrects ou utilisateur introuvable.");
+      // Si l'API renvoie une erreur (ex: mauvais mot de passe)
+      if (res?.error) {
+        throw new Error(res.error);
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("utilisateurs")
-        .select("role")
-        .eq("id", authData.user.id)
-        .single();
+      // 2. Récupération de la session (qui contient maintenant le rôle et l'entreprise !)
+      const session = await getSession();
 
-      if (profileError || !profile) {
-        throw new Error("Impossible de récupérer le profil utilisateur.");
+      if (!session || !session.user) {
+        throw new Error("Impossible de récupérer la session utilisateur.");
       }
 
       router.refresh();
 
-      if (profile.role === "TECHNICIEN") {
+      // 3. Redirection basée sur le rôle (récupéré depuis la session NextAuth)
+      if (session.user.role === "TECHNICIEN") {
         router.push("/dashboard/mes-interventions");
       } else {
         router.push("/dashboard");
@@ -55,7 +55,8 @@ export default function LoginPage() {
           ? error.message
           : "Une erreur est survenue lors de la connexion.",
       );
-      setLoading(false);
+    } finally {
+      setLoading(false); // On s'assure d'arrêter le chargement quoi qu'il arrive
     }
   };
 

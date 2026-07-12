@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { getSession } from "next-auth/react"; // 👈 Remplacement de Supabase par NextAuth
+import {
+  getInterventionsDataSQL,
+  createInterventionSQL,
+  updateInterventionSQL,
+} from "./actions";
 import Link from "next/link";
 import {
   CalendarClock,
@@ -48,7 +53,7 @@ interface InterventionWithRelations {
 }
 
 export default function InterventionsPage() {
-  const supabase = createClient();
+  // ❌ L'appel à createClient() de Supabase a été supprimé ici !
 
   // --- ÉTATS DES DONNÉES ---
   const [interventions, setInterventions] = useState<
@@ -75,67 +80,31 @@ export default function InterventionsPage() {
   });
 
   // =========================================================================
-  // PIPELINE DE CHARGEMENT DES DONNÉES
+  // PIPELINE DE CHARGEMENT DES DONNÉES VIA SQL
   // =========================================================================
   const fetchInitialData = useCallback(
     async (showSpinner = true) => {
       try {
         if (showSpinner) setLoading(true);
 
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-        if (sessionError || !session)
+        // 1. On vérifie la session via NextAuth (100% local et sécurisé)
+        const session = await getSession();
+
+        if (!session || !session.user)
           throw new Error("Utilisateur non authentifié.");
 
-        const { data: profile, error: profileError } = await supabase
-          .from("utilisateurs")
-          .select("entreprise_id")
-          .eq("id", session.user.id)
-          .single();
+        // 2. On récupère tout via notre Action Serveur SQL en passant l'ID NextAuth
+        const result = await getInterventionsDataSQL(session.user.id);
 
-        if (profileError || !profile?.entreprise_id) {
-          throw new Error("Profil d'entreprise introuvable.");
-        }
+        if (!result.success) throw new Error(result.error);
 
-        const entId = profile.entreprise_id;
-        setEntrepriseId(entId);
-
-        const [interventionsRes, clientsRes, techniciensRes] =
-          await Promise.all([
-            supabase
-              .from("interventions")
-              .select(
-                `
-              id, titre, description, statut, date_prevue,
-              clients ( id, nom_complet ),
-              utilisateurs ( id, nom_complet, role )
-            `,
-              )
-              .eq("entreprise_id", entId)
-              .order("date_prevue", { ascending: false }),
-            supabase
-              .from("clients")
-              .select("id, nom_complet")
-              .eq("entreprise_id", entId)
-              .order("nom_complet"),
-            supabase
-              .from("utilisateurs")
-              .select("id, nom_complet, role")
-              .eq("entreprise_id", entId)
-              .order("nom_complet"),
-          ]);
-
-        if (interventionsRes.error) throw interventionsRes.error;
-        if (clientsRes.error) throw clientsRes.error;
-        if (techniciensRes.error) throw techniciensRes.error;
-
+        setEntrepriseId(result.entrepriseId || null);
         setInterventions(
-          interventionsRes.data as unknown as InterventionWithRelations[],
+          (result.interventions as unknown as InterventionWithRelations[]) ||
+            [],
         );
-        setClients(clientsRes.data);
-        setTechniciens(techniciensRes.data);
+        setClients(result.clients as ClientRow[]);
+        setTechniciens(result.techniciens as TechnicienRow[]);
       } catch (error: unknown) {
         const err = error as Error;
         console.error("Pipeline Error [fetchInitialData]:", err);
@@ -144,7 +113,7 @@ export default function InterventionsPage() {
         if (showSpinner) setLoading(false);
       }
     },
-    [supabase],
+    [], // 👈 Supabase retiré des dépendances
   );
 
   useEffect(() => {
@@ -190,7 +159,7 @@ export default function InterventionsPage() {
   };
 
   // =========================================================================
-  // LOGIQUE D'ENREGISTREMENT
+  // LOGIQUE D'ENREGISTREMENT VIA SQL
   // =========================================================================
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -210,17 +179,12 @@ export default function InterventionsPage() {
       };
 
       if (editingId) {
-        const { error } = await supabase
-          .from("interventions")
-          .update(payload)
-          .eq("id", editingId);
-        if (error) throw error;
+        const result = await updateInterventionSQL(editingId, payload);
+        if (!result.success) throw new Error(result.error);
         toast.success("Intervention mise à jour.");
       } else {
-        const { error } = await supabase
-          .from("interventions")
-          .insert([payload]);
-        if (error) throw error;
+        const result = await createInterventionSQL(payload);
+        if (!result.success) throw new Error(result.error);
         toast.success("Intervention planifiée avec succès !");
       }
 
@@ -235,9 +199,6 @@ export default function InterventionsPage() {
     }
   }
 
-  // =========================================================================
-  // RENDU UI
-  // =========================================================================
   const renderStatusBadge = (statut: string) => {
     switch (statut) {
       case "CLOTUREE":
@@ -272,7 +233,6 @@ export default function InterventionsPage() {
     );
   }
 
-  // Options pour les selects
   const clientOptions = clients.map((c) => ({
     value: c.id,
     label: c.nom_complet,
@@ -300,8 +260,8 @@ export default function InterventionsPage() {
             Planification des Interventions
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Supervisez attribution des tâches et le planning technique en temps
-            réel.
+            Supervisez l'attribution des tâches et le planning technique en
+            temps réel.
           </p>
         </div>
 
@@ -401,12 +361,10 @@ export default function InterventionsPage() {
                         <Link
                           href={`/dashboard/interventions/${item.id}/bon-intervention`}
                           className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-medium text-sm transition-colors bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 hover:border-emerald-200 dark:hover:border-emerald-700 px-3 py-1.5 rounded-lg shadow-sm"
-                          title="Afficher le bon d'intervention"
                         >
                           <Printer className="w-4 h-4" />
                           Bon
                         </Link>
-
                         <button
                           onClick={() => openEditModal(item)}
                           className="inline-flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium text-sm transition-colors bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 hover:border-emerald-200 dark:hover:border-emerald-800 px-3 py-1.5 rounded-lg shadow-sm"
@@ -424,7 +382,6 @@ export default function InterventionsPage() {
         </div>
       </div>
 
-      {/* ✅ MODAL AVEC COMPOSANT MODAL */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -465,17 +422,13 @@ export default function InterventionsPage() {
               }
               required
             />
-
             <Select
               label="Technicien"
               options={technicienOptions}
               placeholder="-- Non assigné --"
               value={formData.technicien_id}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  technicien_id: e.target.value,
-                })
+                setFormData({ ...formData, technicien_id: e.target.value })
               }
             />
           </div>
@@ -490,7 +443,6 @@ export default function InterventionsPage() {
               }
               required
             />
-
             <Select
               label="Statut"
               options={statutOptions}

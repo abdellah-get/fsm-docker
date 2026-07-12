@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "../../utils/supabase/client";
 import Link from "next/link";
-import { Button, Input } from "../../components/ui";
-import { Search, Building2, Phone, Mail } from "lucide-react";
+import { Button } from "../../components/ui";
+import { Search, Phone, Mail } from "lucide-react";
+import { getEntreprisesPubliquesSQL } from "./actions"; // 👈 Import de notre action serveur
 
 interface EntreprisePublique {
   id: string;
@@ -14,7 +14,6 @@ interface EntreprisePublique {
 }
 
 export default function AnnuaireEntreprisesPage() {
-  const supabase = createClient();
   const [entreprises, setEntreprises] = useState<EntreprisePublique[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -22,13 +21,16 @@ export default function AnnuaireEntreprisesPage() {
   useEffect(() => {
     async function fetchEntreprises() {
       try {
-        const { data, error } = await supabase
-          .from("entreprises")
-          .select("id, nom, telephone, email")
-          .order("nom", { ascending: true });
+        setLoading(true);
 
-        if (error) throw error;
-        setEntreprises(data || []);
+        // 📍 Appel direct à PostgreSQL via notre action serveur !
+        const result = await getEntreprisesPubliquesSQL();
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        setEntreprises((result.data as EntreprisePublique[]) || []);
       } catch (error) {
         console.error("Erreur lors du chargement des entreprises :", error);
       } finally {
@@ -37,7 +39,7 @@ export default function AnnuaireEntreprisesPage() {
     }
 
     fetchEntreprises();
-  }, [supabase]);
+  }, []); // 👈 Plus besoin de mettre supabase en dépendance
 
   const entreprisesFiltrees = entreprises.filter((ent) =>
     ent.nom.toLowerCase().includes(searchQuery.toLowerCase()),

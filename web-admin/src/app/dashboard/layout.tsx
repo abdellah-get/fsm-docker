@@ -3,7 +3,8 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "../../utils/supabase/client";
+import { getSession, signOut } from "next-auth/react"; // 👈 On importe NextAuth
+import { getProfileLayoutSQL } from "./actions";
 import {
   LayoutDashboard,
   FileText,
@@ -21,38 +22,33 @@ import ThemeToggle from "../../components/ui/ThemeToggle";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
 
   // --- ÉTATS UI & PROFIL ---
   const [role, setRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
-  // --- RÉCUPÉRATION DU PROFIL (La sécurité est gérée par le middleware) ---
+  // --- RÉCUPÉRATION DU PROFIL VIA SQL ---
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        // 1. On utilise NextAuth pour récupérer la session locale sécurisée
+        const session = await getSession();
 
-        // Si pas de session, on ne fait rien, le middleware va s'occuper de rediriger vers /login
-        if (!session) return;
+        // Si pas de session, le middleware gérera la redirection
+        if (!session || !session.user) return;
 
-        const { data: profile, error } = await supabase
-          .from("utilisateurs")
-          .select("role, nom_complet")
-          .eq("id", session.user.id)
-          .single();
+        // 2. Appel à notre serveur Node.js (SQL) en utilisant l'ID NextAuth
+        const result = await getProfileLayoutSQL(session.user.id);
 
-        if (error) {
-          console.error("Erreur lecture profil :", error);
+        if (!result.success) {
+          console.error("Erreur lecture profil :", result.error);
           return;
         }
 
-        if (profile) {
-          setRole(profile.role);
-          setUserName(profile.nom_complet || "");
+        if (result.profile) {
+          setRole(result.profile.role);
+          setUserName(result.profile.nom_complet || "");
         }
       } catch (err) {
         console.error("Erreur inattendue layout :", err);
@@ -62,16 +58,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     };
 
     fetchProfile();
-  }, [supabase]);
+  }, []);
 
-  // Gestion de la déconnexion
+  // Gestion de la déconnexion avec NextAuth
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-
-      router.refresh();
-      router.push("/login");
+      // signOut va détruire le cookie local et rediriger vers /login
+      await signOut({ callbackUrl: "/login" });
     } catch (error) {
       console.error("Erreur lors de la déconnexion :", error);
     }
@@ -86,10 +79,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     const inactiveClass =
       "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-700 dark:hover:text-gray-100";
 
-    return `${baseClass} ${pathname === path ? activeClass : inactiveClass}`;
+    const isActive =
+      path === "/dashboard"
+        ? pathname === "/dashboard"
+        : pathname.startsWith(path);
+
+    return `${baseClass} ${isActive ? activeClass : inactiveClass}`;
   };
 
-  // ⏳ Écran de chargement UI (Très court)
+  // ⏳ Écran de chargement UI
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-dark-900">
@@ -122,7 +120,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <LayoutDashboard size={18} />
                 Tableau de bord
               </Link>
-
               <Link
                 href="/dashboard/interventions"
                 className={getNavLinkClass("/dashboard/interventions")}
@@ -130,7 +127,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <FileText size={18} />
                 Interventions
               </Link>
-
               <Link
                 href="/dashboard/factures"
                 className={getNavLinkClass("/dashboard/factures")}
@@ -138,7 +134,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <Building2 size={18} />
                 Facturation DGI
               </Link>
-
               <Link
                 href="/dashboard/clients"
                 className={getNavLinkClass("/dashboard/clients")}
@@ -146,7 +141,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <Users size={18} />
                 Clients
               </Link>
-
               <Link
                 href="/dashboard/equipe"
                 className={getNavLinkClass("/dashboard/equipe")}
@@ -156,7 +150,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </Link>
             </>
           )}
-
           {role === "TECHNICIEN" && (
             <>
               <Link
@@ -166,7 +159,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <ClipboardList size={18} />
                 Mon Planning
               </Link>
-
               <Link
                 href="/dashboard/work"
                 className={getNavLinkClass("/dashboard/work")}
@@ -210,7 +202,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-
             <span className="text-base font-medium text-gray-800 dark:text-gray-200">
               {userName}
             </span>

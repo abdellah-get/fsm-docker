@@ -1,0 +1,18 @@
+# Ignorer les dossiers de dépendances et de build à tous les niveaux
+**/node_modules/
+**/.next/
+**/out/
+**/build/
+
+# Ignorer les fichiers d'environnement secrets
+.env
+.env.local
+.env.*.local
+**/web-admin/.env*
+
+# Ignorer les données de la base PostgreSQL locale de Docker
+db-data/
+
+# Fichiers systèmes
+.DS_Store
+Thumbs.db
