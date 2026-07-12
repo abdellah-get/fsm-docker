@@ -1,4 +1,79 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
+
+## Jalon 3 : Automatiser les tests et la construction
+
+**Dates :** du 12 Juillet au 12 Juillet
+
+### Objectif
+
+Mettre en place un pipeline d'Intégration Continue (CI) automatisé avec GitHub Actions. À chaque modification ou Pull Request, les tests unitaires et la construction de l'image Docker sont exécutés automatiquement pour éviter de fusionner du code cassé.
+
+### Ce que j'ai accompli
+
+- **Mise en place du framework de tests :** Installation et configuration de `Vitest` dans le sous-dossier `web-admin` et ajout du script de lancement `npm run test` dans le `package.json`.
+- **Écriture des tests unitaires de base :** Création du premier fichier de test (`src/__tests__/exemple.test.ts`) pour valider la logique de base de l'application hors base de données.
+- **Création du Workflow GitHub Actions :** Rédaction du fichier d'intégration continue `.github/workflows/ci.yml` configuré pour se déclencher sur chaque `push` et `pull_request` sur la branche `main`.
+- **Enchaînement des étapes CI/CD :** Configuration du pipeline pour exécuter la récupération du code, la gestion du cache `npm`, l'installation des dépendances, le lancement des tests et la construction de l'image Docker.
+- **Validation du bouclier CI (Simulation d'échec) :** Introduction volontaire d'un test échoué pour valider que GitHub Actions bloque la fusion, puis correction pour valider le retour au vert.
+- **Synchronisation des dépendances :** Résolution des conflits d'installation `npm ci` dans l'environnement CI par l'alignement local de `package-lock.json`.
+
+### Preuves
+
+- **Lien du dépôt :** https://github.com/abdellah-get/fsm-docker.git
+- **Lien des Pull Requests :**
+  - PR #22
+- **Captures d'écran :**
+  - **Capture d'un échec de test (Blocage CI) :** ![Échec CI](./captures/test_failed.jfif)
+  - **Capture de la correction et du succès (Coche verte) :** ![Succès CI](./captures/test_correct.jfif)
+
+### Difficultés rencontrées et solutions
+
+- **Plantage d'installation `npm ci` dans le runner GitHub :**
+  - _Solution :_ Exécution de `npm install` dans `web-admin` pour synchroniser parfaitement `package.json` et `package-lock.json`, et ajustement du workflow avec `npm install`.
+- **Conflits de fichiers Git lors des changements de branches (`Journal_Youssef.md`) :**
+  - _Solution :_ Utilisation de `git reset --hard HEAD` pour nettoyer l'index local et repartir d'un état propre sur la branche principale.
+
+### Questions en attente
+
+- Pas de question
+
+### Temps passé et Prochaines étapes
+
+- **Temps passé :** 4h
+- **Prochaine étape :**
+  - Contacter mon binôme Abdellah
+    - vérifier et finaliser les permissions d'accès au registre GitHub Container Registry (GHCR).
+    - Intégrer le badge de statut dans le `README.md` principal.
+  - Entamer Jalon 4. Sécuriser la chaîne (DevSecOps)
+
+# Compte rendu -- 12 Juillet
+
+**Période concernée :** 12 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Mise en place des tests unitaires (Tâche #15) :** Installation de `Vitest` dans le dossier `web-admin`, configuration du script `npm run test`, et création d'une suite de tests de base (`src/__tests__/exemple.test.ts`) pour valider l'environnement.
+- **Automatisation CI (Tâche #16) :** Création du workflow GitHub Actions (`.github/workflows/ci.yml`) configuré pour déclencher automatiquement les tests et la construction de l'image Docker à chaque push ou pull request.
+- **Validation et robustesse de la CI (Tâche #17) :** Simulation d'un échec de test (volontaire) pour vérifier que GitHub bloque la fusion du code, suivi de la correction et de la validation (coche verte).
+- **Synchronisation des dépendances :** Résolution du blocage `npm ci` dans le pipeline par l'utilisation de `npm install` et la synchronisation du fichier `package-lock.json`.
+
+## 2. Difficultés techniques rencontrées
+
+- **Désynchronisation `npm ci` :** Le pipeline GitHub Actions a échoué initialement car le fichier `package-lock.json` était en conflit avec le `package.json` lors de l'installation automatisée. _Solution :_ Mise à jour locale via `npm install` pour aligner les fichiers et modification du workflow pour utiliser `npm install`.
+- **Conflits de fusion git :** Tentative de changement de branche bloquée par des fichiers non fusionnés (`Journal_Youssef.md`). _Solution :_ Utilisation de `git reset --hard HEAD` pour nettoyer l'index et repartir sur une base propre.
+
+## 3. Prochaines étapes
+
+- **Finaliser le Jalon 3 :**
+  - Contacter mon binôme Abdellah pour finaliser ensemble les derniers points du Jalon 3 .
+  - Finaliser la documentation des preuves (captures d'écran) pour le bilan du jalon 3.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures
+
 ## Jalon 2 : Mettre l'application dans des conteneurs
 
 **Dates :** du 08 Juillet au 11 Juillet
@@ -36,8 +111,10 @@ Empaqueter l'application web (Next.js) et sa base de données (PostgreSQL) dans 
 ### Temps passé et Prochaines étapes
 
 - **Temps passé :** 10 heures.
-- **Prochaines étapes :**  passer la main à Abdellah pour finaliser le câblage de NextAuth, vérifier toutes les interfaces (Login, Dashboard) et préparer les captures finales, puis je vais entamer le Jalon 3 (Intégration continue / GitHub Actions).
+- **Prochaines étapes :** passer la main à Abdellah pour finaliser le câblage de NextAuth, vérifier toutes les interfaces (Login, Dashboard) et préparer les captures finales, puis je vais entamer le Jalon 3 (Intégration continue / GitHub Actions).
+
 ---
+
 # Compte rendu -- 11 Juillet
 
 **Période concernée :** 11 Juillet
