@@ -1,5 +1,43 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
+## Jalon 2 : Mettre l'application dans des conteneurs
 
+**Dates :** du 08 Juillet au 11 Juillet
+
+### Objectif
+
+Empaqueter l'application web (Next.js) et sa base de données (PostgreSQL) dans des conteneurs Docker isolés, optimiser l'image de production, et orchestrer le lancement complet via Docker Compose tout en se détachant du service cloud Supabase au profit d'une infrastructure 100% locale.
+
+### Ce que j'ai accompli
+
+- **Création du Dockerfile optimisé :** Mise en place d'un build multi-étapes avec l'image `node:20-alpine` et activation du mode "standalone" de Next.js pour produire une image ultra-légère. Création du fichier `.dockerignore`.
+- **Orchestration Docker Compose :** Configuration du fichier `docker-compose.yml` pour lancer simultanément les conteneurs `web-admin` et `db`. Mise en place d'un volume pour la persistance des données et des variables d'environnement (`DATABASE_URL`).
+- **Intégration et Déploiement Local :** Fusion de ma branche avec celle de mon binôme (Abdellah) contenant la base de données PostgreSQL. Initialisation manuelle du premier profil utilisateur rattaché à une entreprise via DBeaver (sur le port 5433).
+- **Migration de l'architecture (Retrait de Supabase) :** Suppression progressive des traces de Supabase (anciens clients, middleware, imports) et validation de la nouvelle connexion backend locale via le succès de la route de test `/api/test-db`.
+- **Résolution des dépendances de compilation :** Ajustement du `Dockerfile` en remplaçant la commande stricte `npm ci` par `npm install` pour débloquer le build de l'image.
+
+### Preuves
+
+- **Lien du dépôt :** https://github.com/abdellah-get/fsm-docker.git
+- **Lien de la Pull Request :** #21
+- **Commande de démonstration :** `docker compose up -d --build`
+
+### Difficultés rencontrées et solutions
+
+- **Complexité de l'intégration Docker/Supabase :** Cela nous a bloqués (le 09 Juillet) et poussés à remplacer l'API distante par une base PostgreSQL locale.
+- **Erreurs réseau des conteneurs :** L'application tentait de pointer vers `localhost` au lieu du conteneur DB. _Solution :_ Remplacement par le nom du service (`db`) dans `src/lib/db.ts` et dans les variables d'environnement.
+- **Conflit de persistance des données :** Les nouveaux identifiants n'étaient pas reconnus à cause d'un ancien cache Docker. _Solution :_ Purge totale via la commande `docker compose down -v`.
+- **Crashs des pages (Erreur 500) et modules manquants :** Plantage du middleware et de la page `/login` dû à l'absence de Supabase. _Solution :_ Nettoyage du code, installation manuelle des pilotes `pg` / `@types/pg` (Erreur ts 2307), et ajout du nouveau système d'authentification `next-auth/react` (Erreur ts 2305).
+- **Blocage de la compilation Docker (`npm ci`) :** La désynchronisation entre `package.json` et `package-lock.json` faisait échouer le build. _Solution :_ Passage à `npm install` dans le Dockerfile.
+
+### Questions en attente
+
+- Aucune pour le moment.
+
+### Temps passé et Prochaines étapes
+
+- **Temps passé :** 10 heures.
+- **Prochaines étapes :**  passer la main à Abdellah pour finaliser le câblage de NextAuth, vérifier toutes les interfaces (Login, Dashboard) et préparer les captures finales, puis je vais entamer le Jalon 3 (Intégration continue / GitHub Actions).
+---
 # Compte rendu -- 11 Juillet
 
 **Période concernée :** 11 Juillet
