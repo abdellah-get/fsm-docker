@@ -1,3 +1,207 @@
+# Compte rendu -- 10 Juillet
+
+**Période concernée :** 10 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Fusion des branches :** Intégration de la branche d'Abdellah (qui a remplacé l'API Supabase distante par une base de données locale PostgreSQL) avec ma branche principale.
+- **Conteneurisation de l'application Next.js (Field Service Management) :**
+  - Finalisation d'un **Dockerfile multi-étapes** optimisé pour la production.
+  - Utilisation d'une image de base légère `node:20-alpine`.
+  - Activation du mode **standalone** de Next.js, permettant de produire une image ultra-légère (sans les dépendances de développement inutiles).
+- **Orchestration avec Docker Compose :**
+  - Mise à jour du fichier `docker-compose.yml` pour lancer simultanément et relier le conteneur de l'application web (`web-admin`) et le conteneur de la base de données (`db`).
+  - Configuration des variables d'environnement (`DATABASE_URL`) pour permettre la communication native entre les conteneurs.
+  - Configuration du volume pour la persistance des données PostgreSQL.
+- **Validation backend :** Mise en place et succès de la route de test `/api/test-db` confirmant que le conteneur web parvient bien à lire les données du conteneur de la base de données.
+
+## 2. Difficultés techniques rencontrées
+
+Plusieurs problèmes bloquants ont empêché le site de fonctionner directement en `localhost` lors du déploiement des conteneurs :
+
+- **Erreur 500 (Internal Server Error) au démarrage :** Le middleware de Next.js faisait crasher l'application car il tentait d'initialiser un client Supabase avec des clés d'API manquantes.
+- **Erreur réseau de conteneurs (`localhost` vs `db`) :** L'application tentait de se connecter à PostgreSQL via l'hôte `localhost`. Dans Docker, `localhost` pointe vers le conteneur web lui-même. Il a fallu modifier le code (`src/lib/db.ts`) et le `docker-compose.yml` pour utiliser le nom du service (`db`) comme hôte.
+- **Absence du pilote de base de données (Erreur ts 2307) :** L'abandon de Supabase nécessitait l'utilisation d'un client SQL classique. Il a fallu installer manuellement les paquets `pg` et `@types/pg` pour que Node.js puisse communiquer avec Postgres.
+- **Conflit de persistance (Ancien volume) :** Les nouveaux identifiants de base de données n'étaient pas pris en compte car Docker utilisait un ancien volume en cache. Une purge totale (`docker compose down -v`) a été nécessaire pour forcer l'initialisation avec les bons identifiants.
+- **Plantage actuel de la page `/login` :** Le frontend crash ("This page couldn't load") car le code de la page d'authentification dépend toujours des fonctions natives de `supabase.auth`, qui ne sont plus disponibles.
+
+## 3. Prochaines étapes
+
+- **Résoudre les erreurs frontend :** Nettoyer le code lié à Supabase dans les composants de l'interface (notamment la page `/login` et le système de session) pour que le site s'affiche correctement en local sans crasher.
+- **Adapter l'authentification :** Réécrire la logique de connexion pour qu'elle s'appuie directement sur notre base PostgreSQL locale (au lieu du service d'authentification de Supabase).
+
+## 4. Temps investi
+
+- **Durée totale :** 4 heures
+
+# Compte rendu -- 10 Juillet
+
+## ce que j'ai fait:
+
+Je n'ai pas codé ni produit de livrable direct aujourd'hui
+
+## ce qui me bloque :
+
+La complexité de l'intégration de Supabase avec Docker
+
+# Compte rendu -- 08 Juillet
+
+**Période concernée :** 08 Juillet
+
+---
+
+## 1. Réalisations
+
+- Optimisation du **Dockerfile** de l'application Next.js (Field Service Management) pour la production :
+  - Mise en place d'un **build multi‑étapes** (séparation construction / exécution).
+  - Utilisation d'une image de base `node:20-alpine` pour réduire la taille.
+  - Limitation des dépendances installées (`npm ci --only=production`) dans l'image finale.
+  - Activation du mode **standalone** de Next.js pour une image encore plus légère (< 100 Mo).
+- Création et enrichissement du fichier **`.dockerignore`** pour exclure `node_modules`, `.next`, `.env`, et les fichiers inutiles du contexte de build.
+- Mise à jour du fichier **`docker-compose.yml`** :
+
+## 2. Difficultés techniques rencontrées
+
+- **Aucune difficulté technique notable pour le moment.**  
+  Les modifications apportées (Dockerfile, .dockerignore, docker-compose) se sont déroulées sans erreur bloquante.
+
+## 3. Prochaines étapes
+
+- **Construire l’image Docker de production** à l’aide du Dockerfile optimisé (`docker build -t fsm-app:light .`).
+- **Lancer l’environnement complet** avec `docker compose up` pour valider le dialogue entre les services (app + base de données).
+- Partager le travail avec mon binôme Abdellah via une **Pull Request**.
+- Préparer le **bilan du Jalon 2** pour notre encadrant.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures.
+
+---
+
+# Bilan du Jalon 1 : Fondations Git et qualité du code
+
+**Période :** du 07 Juillet au 08 Juillet
+
+## Objectif
+
+Mettre en place un environnement de développement collaboratif avec Git,
+préparer une base de projet propre et intégrer un contrôle de la qualité
+du code.
+
+## Réalisations
+
+- Création d'une route `/api/health` fonctionnelle.
+- Mise à jour du `README.md` avec les étapes de lancement via Docker.
+- Vérification du `.gitignore`.
+- Configuration et exécution d'ESLint.
+- Respect du Git Flow avec un développement sur une branche dédiée.
+
+## Preuves
+
+- Dépôt GitHub : https://github.com/abdellah-get/fsm-docker.git
+- Pull Request : #11
+- Capture d'écran du GitHub Board transmise à l'encadrant.
+
+## Critères validés
+
+- Aucun push direct sur `main`.
+- Historique des commits clair.
+- Projet lançable en suivant le `README`.
+- Tableau de bord mis à jour.
+
+## Difficultés rencontrées et solutions
+
+- VS Code affichait une erreur liée aux types de Next.js
+  (`Cannot find module 'next/server'`). Le problème a été résolu après
+  l'installation des dépendances avec `npm install` et le redémarrage
+  du serveur TypeScript.
+- ESLint a détecté plusieurs erreurs fréquentes (imports inutilisés,
+  variables non utilisées et problèmes de mise en forme). Une
+  correction automatique suivie d'une vérification manuelle a permis
+  de résoudre ces points.
+
+## Questions en attente
+
+Aucune.
+
+## Temps passé et prochaines étapes
+
+**Temps passé :** 3h
+
+La prochaine étape consiste à préparer les tâches du **Jalon 2**, les
+ajouter au GitHub Board et commencer le développement sur une nouvelle
+branche.
+
+---
+
+# Compte rendu -- 07 Juillet
+
+## Ce que j'ai fait
+
+J'ai bien avancé sur le **Jalon 1** en travaillant sur une branche
+dédiée (`feat/jalon1`) selon le Git Flow. J'ai développé une
+route API `/health` avec Next.js, vérifié le contenu du `.gitignore`
+afin d'éviter le versionnement de fichiers sensibles, puis amélioré le
+`README.md` pour faciliter le lancement du projet avec Docker. Enfin,
+j'ai ouvert une Pull Request pour proposer mes modifications.
+
+## Ce qui me bloque
+
+Aucun blocage majeur. En revanche, ESLint a signalé plusieurs problèmes
+courants dans le projet existant, notamment des variables déclarées mais
+inutilisées, des imports non utilisés et quelques avertissements liés au
+formatage du code. Un nettoyage est nécessaire avant de finaliser le
+jalon.
+
+## Ce que je vais faire ensuite
+
+Corriger les remarques d'ESLint (avec `--fix` lorsque c'est possible),
+ajouter un commit de correction sur ma branche, puis demander à mon
+binôme de relire et valider la Pull Request.
+
+**Temps passé :** 2h
+
+---
+
+# Journal de Bord – Jalon 0 (Période du 05 au 06 Juillet)
+
+## 1. Objectif du sprint
+
+Préparer le socle technique et organisationnel : configuration des environnements, définition des rituels d'équipe et sélection de l'application support du projet (fil rouge).
+
+## 2. Travaux réalisés
+
+- **Environnement de développement** : Installation et paramétrage de Git et VS Code.
+- **Application cible** : Choix et initialisation d'une application web Next.js. Le code est versionné sur GitHub et pleinement opérationnel en local via Docker.
+
+## 3. Preuves et critères de validation
+
+- **Dépôt source** : [https://github.com/abdellah-get/fsm-docker.git](https://github.com/abdellah-get/fsm-docker.git)
+
+## 4. Incidents techniques et correctifs
+
+| Problème rencontré                | Solution apportée                                                     |
+| :-------------------------------- | :-------------------------------------------------------------------- |
+| Échec de connexion à l'API Docker | Redémarrage de Docker Desktop.                                        |
+| Conflit avec un ancien conteneur  | Nettoyage des ressources via la commande `docker-compose down`.       |
+| Git non détecté dans VS Code      | Réouverture du projet depuis le bon répertoire racine (`fsm-docker`). |
+
+## 5. Points d'attention et questions en suspens
+
+Aucun blocage ou question ouverte à ce stade.
+
+## 6. Temps investi et prochaines étapes
+
+- **Charge estimée** : 3 heures.
+
+## Prochaines étapes
+
+- **Suite du planning** : Démarrage du Jalon 1 avec mon binôme en respectant notre système de Pull Requests.
+
+---
+
 # JOURNAL DE BORD – STAGE WELANCE Ouchen Youssef
 
 **Période concernée :** 06 Juillet
@@ -41,38 +245,3 @@ Les points suivants ont constitué des freins temporaires au cours de la session
 ## 4. Temps investi
 
 - **Durée totale :** 3 heures.
-
-# Journal de Bord – Jalon 0 (Période du 05 au 06 Juillet)
-
-## 1. Objectif du sprint
-
-Préparer le socle technique et organisationnel : configuration des environnements, définition des rituels d'équipe et sélection de l'application support du projet (fil rouge).
-
-## 2. Travaux réalisés
-
-- **Environnement de développement** : Installation et paramétrage de Git et VS Code.
-- **Application cible** : Choix et initialisation d'une application web Next.js. Le code est versionné sur GitHub et pleinement opérationnel en local via Docker.
-
-## 3. Preuves et critères de validation
-
-- **Dépôt source** : [https://github.com/abdellah-get/fsm-docker.git](https://github.com/abdellah-get/fsm-docker.git)
-
-## 4. Incidents techniques et correctifs
-
-| Problème rencontré                | Solution apportée                                                     |
-| :-------------------------------- | :-------------------------------------------------------------------- |
-| Échec de connexion à l'API Docker | Redémarrage de Docker Desktop.                                        |
-| Conflit avec un ancien conteneur  | Nettoyage des ressources via la commande `docker-compose down`.       |
-| Git non détecté dans VS Code      | Réouverture du projet depuis le bon répertoire racine (`fsm-docker`). |
-
-## 5. Points d'attention et questions en suspens
-
-Aucun blocage ou question ouverte à ce stade.
-
-## 6. Temps investi et prochaines étapes
-
-- **Charge estimée** : 3 heures.
-
-## prochaines étapes
-
-- **Suite du planning** : Démarrage du Jalon 1 avec mon binôme en respectant notre système de Pull Requests.
