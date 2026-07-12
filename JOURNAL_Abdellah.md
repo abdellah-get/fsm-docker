@@ -1,5 +1,54 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+# Journal de Bord - Projet FSM
+
+## Jalon 2 : Mettre l'application dans des conteneurs
+
+**Dates :** du 08 Juillet au 11 Juillet
+
+### Objectif
+
+Empaqueter l'application web et sa base de données dans des conteneurs Docker isolés, optimiser la taille de l'image, et orchestrer le lancement complet via Docker Compose de manière 100% locale et indépendante.
+
+### Ce que j'ai accompli
+
+- **Création du Dockerfile :** Mise en place d'un "multi-stage build" pour réduire drastiquement la taille de l'image finale.
+- **Configuration de Docker Compose :** Création du fichier `docker-compose.yml` pour orchestrer simultanément le conteneur Next.js et PostgreSQL.
+- **Persistance et Réseau :** Ajout d'un réseau interne et d'un volume Docker pour sauvegarder les données de la base.
+- **Migration majeure (Adieu Supabase) :** Remplacement par NextAuth pour l'authentification locale, chiffrement des mots de passe avec `bcryptjs`, et conversion des images en format Base64 pour un stockage direct dans PostgreSQL (`TEXT[]`).
+- **Sécurisation :** Utilisation stricte des variables d'environnement.
+
+### Preuves
+
+- **Lien du dépôt :** https://github.com/abdellah-get/fsm-docker.git
+- **Lien de la Pull Request :** https://github.com/abdellah-get/fsm-docker/pull/14
+- **Taille de l'image :** 264MB (DISK USAGE)
+- **Commande de démonstration :** `docker compose up -d` (lancement de toute la stack)
+- **Captures d'écran :** Capture de la stack en fonctionnement sur le navigateur et base connectée sur DBeaver:
+
+- **Capture de l'application :** ![Application sur le navigateur](./captures/navigateur.png)
+
+- **Capture de la base de données :**
+  ![Base sur DBeaver](./captures/dbeaver.png)
+
+### Difficultés rencontrées et solutions
+
+- **Erreur de connexion DBeaver (`Connection to localhost:5433 refused`) :**
+  - _Solution :_ Lancer `docker compose up -d` et s'assurer que le mapping des ports (`5432:5432`) correspond parfaitement aux réglages de DBeaver.
+- **Détachement difficile de Supabase :**
+  - _Solution :_ Refonte complète des fonctions d'authentification (NextAuth), et réécriture des "Actions Server" pour exécuter du SQL pur via `pool.query`.
+- **Erreurs de syntaxe post-nettoyage :**
+  - _Solution :_ Révision ligne par ligne des fichiers (`page.tsx`) et nettoyage minutieux des dépendances des hooks (`useEffect`).
+
+### Questions en attente
+
+- Aucune pour le moment.
+
+### Temps passé et Prochaines étapes
+
+- **Temps passé :** 15h
+- **Prochaine étape :** Jalon 3 - Écrire un workflow GitHub Actions pour mettre en place l'Intégration Continue (CI) et automatiser la construction de l'image.
+
 ## Le 11 Juillet
 
 - \*\*Ce que j'ai fait : Grosse victoire aujourd'hui ! J'ai enfin réussi à faire fonctionner l'authentification 100% en local avec NextAuth et notre base PostgreSQL. J'ai pris le temps de rédiger un fichier README.md super clair pour que mon binôme puisse initialiser la base de données via notre init.sql et se créer son propre compte. J'ai sécurisé tout ça en faisant un push de mon travail sur la branche jalon2-POSTGRESQL. Ensuite, j'ai pris une décision radicale : éradiquer totalement Supabase du projet pour qu'on soit 100% indépendants. J'ai modifié le code des pages "Mes Interventions" et "Work" pour qu'elles utilisent les sessions NextAuth au lieu de l'authentification Supabase, et j'ai modifié les colonnes de signatures en TEXT via DBeaver pour stocker les images directement en Base64.
