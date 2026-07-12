@@ -62,4 +62,34 @@ Ouvre ton navigateur sur : http://localhost:3001/login
 
 Connecte-toi avec l'email défini à l'étape 3 et ton mot de passe.
 
-Bienvenue sur le Dashboard !
+## Bienvenue sur le Dashboard !
+
+# Jalon 3 : Automatisation (CI/CD)
+
+Ce document détaille la mise en place de l'Intégration Continue pour le projet Field Service Management. L'objectif est de garantir la qualité du code à chaque modification.
+
+## ⚙️ Étapes de réalisation
+
+### 1. Mise en place des tests unitaires (#15)
+
+Nous avons intégré `Vitest` pour automatiser la vérification du code.
+
+- **Installation** : Ajout de `vitest` comme dépendance de développement.
+- **Script** : Ajout de `"test": "vitest run"` dans `package.json`.
+- **Test de base** : Création de `web-admin/src/__tests__/exemple.test.ts` pour valider l'environnement de test.
+
+### 2. Workflow d'Intégration Continue (#16)
+
+Automatisation du pipeline via GitHub Actions pour sécuriser les déploiements.
+
+- **Configuration** : Création du fichier `.github/workflows/ci.yml`.
+- **Mécanique** : Le workflow s'exécute automatiquement sur chaque `push` ou `pull request` sur la branche `main`.
+- **Optimisation** : Utilisation du cache `npm` pour garantir un pipeline rapide.
+
+### 3. Validation et robustesse de la CI (#17)
+
+Processus de vérification pour garantir que le robot CI bloque les erreurs humaines.
+
+- **Simulation d'échec** : Introduction volontaire d'une erreur mathématique (`1+1=3`) pour tester le blocage du pipeline.
+- **Preuve d'échec** : Capture d'écran de l'étape de test échouée (croix rouge sur GitHub).
+- **Correction** : Correction du code et validation par la réussite du pipeline (coche verte).
