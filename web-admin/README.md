@@ -1,5 +1,7 @@
 # Web Admin - Application SaaS
 
+[![Pipeline CI/CD](https://github.com/abdellah-get/fsm-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/abdellah-get/fsm-docker/actions/workflows/ci.yml)
+
 ## Lancer le projet avec Docker
 
 1. Assurez-vous que Docker Desktop est allumé.
