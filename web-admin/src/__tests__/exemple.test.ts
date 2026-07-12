@@ -3,7 +3,7 @@ import { expect, test, describe } from "vitest";
 describe("Tests de base pour valider la CI (Jalon 3)", () => {
   test("Vérifie que les mathématiques de base fonctionnent", () => {
     const resultat = 1 + 1;
-    expect(resultat).toBe(3);
+    expect(resultat).toBe(2);
   });
 
   test("Vérifie que la configuration des mots de passe est bien de type string", () => {
