@@ -1,13 +1,17 @@
-export { default } from "next-auth/middleware";
+import { withAuth } from "next-auth/middleware";
+
+// On exporte explicitement la fonction générée par withAuth
+export default withAuth(
+  function middleware(req) {
+    // Tu peux laisser cette fonction vide, NextAuth s'occupe de la vérification
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token, // Vérifie qu'un token (session) existe
+    },
+  },
+);
 
 export const config = {
-  matcher: [
-    /*
-     * Matcher pour intercepter toutes les routes SAUF :
-     * - Les fichiers statiques et images
-     * - La page de login (/login) pour ne pas bloquer les utilisateurs non connectés
-     * - Les routes API (/api/...) pour laisser passer les requêtes d'authentification
-     */
-    "/((?!_next/static|_next/image|favicon.ico|login|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/dashboard/:path*"],
 };

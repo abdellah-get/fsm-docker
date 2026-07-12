@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "../../../../utils/supabase/client";
+import { getSession } from "next-auth/react";
 import { getDemandeDataSQL, assignTechnicienSQL } from "./actions"; // 👈 Import de nos actions
 import Button from "../../../../components/ui/Button";
 import Select from "../../../../components/ui/Select";
@@ -27,7 +27,6 @@ interface TechnicienOption {
 }
 
 export default function DetailDemandePage() {
-  const supabase = createClient();
   const router = useRouter();
   const params = useParams();
   const demandeId = params.id as string;
@@ -42,14 +41,14 @@ export default function DetailDemandePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Authentification via Supabase
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
+        // 1. Authentification 100% locale via NextAuth
+        const session = await getSession();
+        if (!session || !session.user) return;
 
-        // 2. Fetch des données via notre Action SQL !
-        const result = await getDemandeDataSQL(demandeId, user.id);
+        const currentUserId = (session.user as any).id;
+
+        // 2. Fetch des données via notre Action SQL en utilisant l'ID NextAuth !
+        const result = await getDemandeDataSQL(demandeId, currentUserId);
 
         if (!result.success) {
           throw new Error(result.error);
@@ -66,8 +65,9 @@ export default function DetailDemandePage() {
     };
 
     fetchData();
-  }, [supabase, demandeId]);
+  }, [demandeId]);
 
+  // 🟢 LA CORRECTION EST ICI : La fonction est bien sur une nouvelle ligne !
   const handleAssigner = async () => {
     if (!demande || !selectedTechnicienId) return;
 
@@ -75,7 +75,7 @@ export default function DetailDemandePage() {
       setAssigning(true);
       setError(null);
 
-      // 📍 NOUVEAU : Appel de notre transaction SQL pour l'assignation !
+      // 📍 Appel de notre transaction SQL pour l'assignation !
       const result = await assignTechnicienSQL(demande, selectedTechnicienId);
 
       if (!result.success) {
