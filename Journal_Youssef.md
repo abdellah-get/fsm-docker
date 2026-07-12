@@ -1,3 +1,36 @@
+# JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
+
+# Compte rendu -- 11 Juillet
+
+**Période concernée :** 11 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Intégration du travail en binôme :** Récupération du travail d'Abdellah (mise en place de la base de données PostgreSQL locale) et fusion réussie de sa branche avec ma branche `jalon2`.
+- **Initialisation de la base de données :** Suivi des procédures du `README.md` fraîchement rédigé, incluant la connexion via DBeaver sur le port 5433 et l'injection manuelle en SQL du premier profil utilisateur (Gérant/Technicien) rattaché à une entreprise.
+- **Nettoyage de l'architecture :** Suppression progressive des traces de Supabase (anciens clients, middleware, imports) devenues obsolètes suite à la transition vers la base de données locale.
+- \*\*Modifier le `Dockerfile` (passer de `npm ci` à `npm install`) pour débloquer la compilation de l'image..
+
+## 2. Difficultés techniques rencontrées
+
+- **Dépendances et typage TypeScript :** L'ajout du nouveau système d'authentification a généré des erreurs de modules introuvables (`next-auth/react` non installé initialement) et des fonctions d'actions SQL manquantes (`ts(2305)`).
+- **Blocage de compilation Docker :** La commande stricte `npm ci` dans le Dockerfile a fait échouer le build à cause d'une désynchronisation entre `package.json` et `package-lock.json` suite à l'ajout des nouveaux paquets.
+
+## 3. Prochaines étapes
+
+- **Finaliser le Jalon 2 :**
+- Conteneurisation (Build) : Lancement de la construction de la nouvelle image Docker (`docker compose up -d --build`) intégrant la fusion de nos deux travaux
+- Optimiser la taille de l'image Docker finale (multi-stage build, mode standalone) pour garantir un déploiement plus léger et performant.
+- Vérifier que toutes les interfaces (Login, Dashboard) communiquent parfaitement avec le conteneur de la base de données sans aucune erreur.
+- Partager le travail validé et conteneurisé via une **Pull Request**.
+- Préparer les captures d'écran et la documentation pour le **bilan final du Jalon 2** avec notre encadrant.
+
+## 4. Temps investi
+
+- **Durée totale :** 4 heures
+
 # Compte rendu -- 10 Juillet
 
 **Période concernée :** 10 Juillet
@@ -36,7 +69,7 @@ Plusieurs problèmes bloquants ont empêché le site de fonctionner directement 
 
 - **Durée totale :** 4 heures
 
-# Compte rendu -- 10 Juillet
+# Compte rendu -- 09 Juillet
 
 ## ce que j'ai fait:
 
@@ -201,8 +234,6 @@ Aucun blocage ou question ouverte à ce stade.
 - **Suite du planning** : Démarrage du Jalon 1 avec mon binôme en respectant notre système de Pull Requests.
 
 ---
-
-# JOURNAL DE BORD – STAGE WELANCE Ouchen Youssef
 
 **Période concernée :** 06 Juillet
 
