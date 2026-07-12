@@ -29,7 +29,7 @@
 
 ## 4. Temps investi
 
-- **Durée totale :** 3 heures.
+- **Durée totale :** 4 heures
 
 # Compte rendu -- 10 Juillet
 

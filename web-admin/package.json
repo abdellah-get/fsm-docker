@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.107.0",
     "@types/react-signature-canvas": "^1.0.7",
     "bcryptjs": "^3.0.3",
     "jspdf": "^4.2.1",

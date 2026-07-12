@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { createClient } from "../../utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Input, Textarea } from "../../components/ui";
 import dynamic from "next/dynamic";
@@ -16,8 +15,17 @@ const MapPicker = dynamic(() => import("./MapPicker"), {
   ),
 });
 
+// 🟢 NOUVEAU : Fonction utilitaire pour convertir un fichier image en texte Base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export default function FormulaireClient() {
-  const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const entrepriseId = searchParams.get("entreprise_id");
@@ -173,26 +181,12 @@ export default function FormulaireClient() {
         throw new Error("Veuillez remplir tous les champs obligatoires.");
       }
 
-      // --- 1. UPLOAD DES PHOTOS DANS SUPABASE STORAGE ---
-      let uploadedPhotoUrls: string[] = [];
+      // --- 1. 🟢 NOUVEAU : CONVERSION DES PHOTOS EN BASE64 LOCALEMENT ---
+      let processedPhotosBase64: string[] = [];
       if (photos.length > 0) {
         for (const photo of photos) {
-          const fileExt = photo.name.split(".").pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `${entrepriseId}/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("photos_interventions")
-            .upload(filePath, photo);
-
-          if (uploadError)
-            throw new Error("Erreur lors de l'envoi des photos.");
-
-          const { data: publicUrlData } = supabase.storage
-            .from("photos_interventions")
-            .getPublicUrl(filePath);
-
-          uploadedPhotoUrls.push(publicUrlData.publicUrl);
+          const base64String = await fileToBase64(photo);
+          processedPhotosBase64.push(base64String);
         }
       }
 
@@ -209,7 +203,7 @@ export default function FormulaireClient() {
         description: description || null,
         date_disponibilite: date_disponibilite || null,
         preference_horaire: preference_horaire || null,
-        photos: uploadedPhotoUrls, // Les URLs générées à l'étape précédente
+        photos: processedPhotosBase64, // 👈 Les photos sont maintenant envoyées sous forme de texte long !
       };
 
       const result = await createDemandeSQL(payload);

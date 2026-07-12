@@ -32,6 +32,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://admin:admin@db:5432/fsm_db
       - LOCAL_DATABASE_URL=postgresql://admin:admin@db:5432/fsm_db
+      - NEXTAUTH_URL=http://localhost:3001
     depends_on:
       - db
     networks:

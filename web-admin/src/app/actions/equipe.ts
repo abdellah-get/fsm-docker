@@ -1,14 +1,7 @@
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
 import pool from "../../lib/db"; // 👈 Ajuste le chemin vers ton lib/db.ts si nécessaire
-
-// ⚠️ Initialisation du client Admin avec la SERVICE_ROLE_KEY
-// On le garde UNIQUEMENT pour la gestion de l'authentification (créer/supprimer des comptes)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import bcrypt from "bcryptjs"; // 👈 On importe bcryptjs pour sécuriser le mot de passe
 
 interface CreateTechnicianPayload {
   email: string;
@@ -20,48 +13,43 @@ interface CreateTechnicianPayload {
 
 export async function createTechnicianAction(payload: CreateTechnicianPayload) {
   try {
-    // 1. Création de l'utilisateur dans le système d'authentification global Supabase (ON GARDE)
-    const { data: authData, error: authError } =
-      await supabaseAdmin.auth.admin.createUser({
-        email: payload.email,
-        password: payload.mot_de_passe,
-        email_confirm: true, // ✅ Force l'email comme "vérifié"
-        user_metadata: {
-          nom_complet: payload.nom_complet,
-          role: "TECHNICIEN",
-        },
-      });
+    // 1. Hasher le mot de passe pour la sécurité (le fameux format $2a$...)
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(payload.mot_de_passe, saltRounds);
 
-    if (authError) throw new Error(authError.message);
+    // 2. Insertion du profil COMPLET dans TA table publique "utilisateurs"
+    // L'ID sera généré automatiquement par PostgreSQL (grâce à uuid_generate_v4() par exemple)
+    const query = `
+      INSERT INTO utilisateurs (entreprise_id, email, mot_de_passe, nom_complet, telephone, role)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `;
+    const values = [
+      payload.entreprise_id,
+      payload.email,
+      hashedPassword, // 👈 On insère le mot de passe crypté
+      payload.nom_complet,
+      payload.telephone,
+      "TECHNICIEN",
+    ];
 
-    const userId = authData.user.id;
-
-    // 2. Insertion du profil dans TA table publique "utilisateurs" (PASSAGE EN SQL)
-    try {
-      const query = `
-        INSERT INTO utilisateurs (id, entreprise_id, nom_complet, telephone, role)
-        VALUES ($1, $2, $3, $4, $5)
-      `;
-      const values = [
-        userId,
-        payload.entreprise_id,
-        payload.nom_complet,
-        payload.telephone,
-        "TECHNICIEN",
-      ];
-
-      await pool.query(query, values);
-    } catch (dbError: any) {
-      // 💡 GESTION EXPERTE : Le "Rollback"
-      // Si l'insertion SQL échoue, on supprime le compte Auth pour ne pas avoir de compte "fantôme".
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      throw new Error(`Erreur d'insertion BDD : ${dbError.message}`);
-    }
+    await pool.query(query, values);
 
     return { success: true };
   } catch (error: unknown) {
     const err = error as Error;
     console.error("Erreur Serveur [createTechnicianAction]:", err.message);
+
+    // Si l'erreur est liée à un email déjà existant (violation de contrainte UNIQUE)
+    if (
+      err.message.includes("unique constraint") ||
+      err.message.includes("duplicate key")
+    ) {
+      return {
+        success: false,
+        error: "Cet email est déjà utilisé par un autre compte.",
+      };
+    }
+
     return { success: false, error: err.message };
   }
 }
