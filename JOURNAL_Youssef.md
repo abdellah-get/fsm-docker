@@ -1,5 +1,77 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+## Jalon 4 : Sécuriser la chaîne (DevSecOps)
+
+**Dates :** 13 Juillet
+
+### Objectif
+
+Mettre en place des garde-fous de sécurité directement au sein du pipeline d'Intégration Continue (CI/CD) afin d'identifier et de bloquer les failles au plus tôt (approche _Shift Left_) : détection des secrets oubliés et analyse automatique des vulnérabilités de l'image Docker.
+
+### Ce que j'ai accompli
+
+- **Découpage et structuration DevSecOps :** Création des 5 issues associées au Jalon 4 sur GitHub Projects pour planifier l'intégration de la sécurité de manière progressive et sans blocage prématuré.
+- **Détection automatisée des secrets (Gitleaks) :** Intégration de l'action `Gitleaks` dans le workflow GitHub Actions (`.github/workflows/ci.yml`). Utilisation de l'option `fetch-depth: 0` pour scanner l'intégralité de l'historique Git et empêcher la fuite de clés API ou de mots de passe.
+- **Analyse de l'image Docker (Trivy) :** Intégration de `aquasecurity/trivy-action` dans le pipeline. Configuration d'une construction d'image locale dédiée au scan (`docker build -t fsm-image-local ./web-admin`) afin d'auditer le conteneur avant toute tentative de publication.
+- **Génération de rapports lisibles :** Paramétrage d'un affichage des résultats sous forme de tableau ASCII (`format: 'table'`) ciblant uniquement les sévérités critiques et hautes (`severity: 'CRITICAL,HIGH'`).
+- **Validation du mode Audit :** Exécution initiale réussie avec `exit-code: '0'` pour valider le bon fonctionnement du scanner et l'affichage du rapport sans bloquer inutilement les développements en cours.
+- **Ouverture de la Pull Request :** Soumission des modifications dans une Pull Request dédiée pour validation par l'équipe.
+
+### Preuves
+
+- **Lien du dépôt :** https://github.com/abdellah-get/fsm-docker.git
+- Lien de la Pull Request :#30
+- **Captures d'écran :**
+  - **Scan des secrets (Gitleaks) au vert :** ![Scan Gitleaks](./captures/gitleaks_success.jpeg)
+  - **Rapport d'analyse d'image (Trivy) :** ![Rapport Trivy](./captures/trivy_audit.jpeg)
+
+### Difficultés rencontrées et solutions
+
+- **Risque d'omission de secrets dans l'historique :** Par défaut, GitHub Actions ne télécharge que le dernier commit, ce qui pouvait laisser passer un secret introduit puis effacé dans un commit précédent.
+  - _Solution :_ Ajout obligatoire du paramètre `fetch-depth: 0` sur le step `actions/checkout` pour forcer le téléchargement et le contrôle de tout l'historique du dépôt.
+- **Éviter la "fatigue d'alerte" et les blocages intempestifs :** Bloquer le pipeline dès le premier jour sur toutes les alertes (faibles/moyennes) risquait de paralyser le projet.
+  - _Solution :_ Configuration temporaire de Trivy en mode observation (`exit-code: '0'`) et ciblage strict des sévérités `CRITICAL` et `HIGH`.
+
+### Questions en attente
+
+- Pas de question pour le moment
+
+### Temps passé et Prochaines étapes
+
+- **Temps passé :** 4h
+- **Prochaine étape :**
+  - Entamer le jalon 5 Déployer automatiquement
+
+# Compte rendu -- 13 Juillet
+
+**Période concernée :** 13 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Lancement du Jalon 4 (DevSecOps) :** Découpage du jalon en 5 tâches claires et création des issues associées sur GitHub Projects pour structurer l'intégration de la sécurité dans la chaîne CI/CD.
+- **Détection automatisée des secrets :** Intégration de l'outil `Gitleaks` dans le workflow GitHub Actions (`.github/workflows/ci.yml`) avec l'option `fetch-depth: 0` pour analyser l'ensemble de l'historique des commits et empêcher la fuite de clés/mots de passe.
+- **Analyse de vulnérabilités Docker :** Intégration de `Trivy` (`aquasecurity/trivy-action`) dans le pipeline CI/CD pour scanner les conteneurs. Configuration d'une construction locale d'image et affichage du rapport de sécurité sous forme de tableau (`format: 'table'`) ciblant les sévérités `CRITICAL` et `HIGH`.
+- **Validation du mode Audit & Pull Request :** Exécution réussie du scan Trivy en mode observation (`exit-code: '0'`), confirmant le bon fonctionnement du rapport sans bloquer inutilement le pipeline et ouverture de la Pull Request associée pour intégrer ces fonctionnalités DevSecOps..
+
+## 2. Difficultés techniques rencontrées
+
+- **Analyse incomplète de l'historique par Gitleaks :** Par défaut, GitHub Actions ne télécharge que le dernier commit, risquant de rater des secrets masqués dans les commits précédents. _Solution :_ Ajout du paramètre `fetch-depth: 0` sur le step `actions/checkout` pour forcer le téléchargement de l'historique complet.
+- **Risque de blocage prématuré sur Trivy :** Un blocage immédiat (`exit-code: '1'`) aurait pu bloquer le pipeline en raison de failles préexistantes dans l'image de base. _Solution :_ Utilisation temporaire du code de sortie `0` (mode audit) pour vérifier le format des rapports avant de configurer les règles de blocage strictes.
+
+## 3. Prochaines étapes
+
+- **Passage de relais à Abdellah :**
+  - Donner la main à mon binôme Abdellah pour vérifier/valider ensemble la fin des configurations et clore officiellement les derniers détails restants.
+- **Préparation des preuves :** Capturer l'ensemble des preuves d'exécution pour constituer le bilan du jalon.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures
+
+---
+
 ## Jalon 3 : Automatiser les tests et la construction
 
 **Dates :** du 12 Juillet au 12 Juillet
