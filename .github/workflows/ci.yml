@@ -16,6 +16,19 @@ jobs:
   # ---------------------------------------------------
   # TÂCHE 1 : TESTS
   # ---------------------------------------------------
+  security-scan:
+    name: 🔒 Scan des secrets (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Récupérer le code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Crucial : demande à GitHub de récupérer tout l'historique pour scanner tous les commits
+
+      - name: 🕵️ Lancer Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test:
     name: 🧪 Tests & Vérifications
     runs-on: ubuntu-latest
