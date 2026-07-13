@@ -1,6 +1,73 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
-Le 12 Juillet (ou la date du jour)
+### Bilan du jalon 4 : Sécuriser la chaîne (DevSecOps)
+
+**Dates :** 13 Juillet 2026
+
+- **Objectif rappelé en une phrase :** Intégrer des contrôles de sécurité automatisés (scan de secrets et de vulnérabilités Docker) directement dans notre pipeline CI/CD pour empêcher le déploiement de code ou d'images dangereuses.
+
+- **Ce que nous avons réalisé :**
+  - **Côté Youssef :** Il a configuré l'outil Gitleaks pour scanner tout l'historique du dépôt à la recherche de mots de passe ou de clés API oubliés. Il a également ajouté l'étape de scan d'image Docker avec Trivy.
+  - **De mon côté :** J'ai activé les garde-fous. J'ai configuré Trivy pour qu'il échoue strictement en cas de vulnérabilité `CRITICAL`. J'ai lié le job de construction Docker pour qu'il dépende du succès des scans de sécurité. J'ai ensuite prouvé que le pipeline jouait bien son rôle en le sabotant volontairement avec une vieille image pleine de failles (`node:14-buster`), avant de corriger le tir en repassant sur `node:20-alpine`.
+
+- **Preuves (captures, journaux, liens) :**
+  - **Lien du workflow CI final :** https://github.com/abdellah-get/fsm-docker/blob/main/.github/workflows/ci.yml
+  - **Capture d'un blocage sur une vulnérabilité :** ![Trivy bloque le pipeline](./captures/jalon4-trivy-fail.png)
+  - **Preuve de sa correction :** ![Pipeline sécurisé au vert](./captures/jalon4-trivy-success.png)
+
+- **Critères validés :**
+  - [x] Le pipeline s'arrête bien sur une vulnérabilité critique.
+  - [x] Un secret ajouté par erreur est détecté.
+  - [x] Un rapport d'analyse est produit et consultable (dans les logs GitHub Actions).
+
+- **Difficultés rencontrées et solutions :**
+  - _Le piège du scanner intelligent :_ Lors de ma première simulation d'échec, Trivy laissait passer mon image `node:14-alpine` comme si elle était sécurisée. J'ai appris que Trivy ne scanne que l'image finale produite par le _multi-stage build_, et que les images Alpine sont souvent très propres. _Solution :_ Pour prouver le blocage, j'ai forcé l'utilisation d'une image Debian périmée (`node:14-buster`) sur toutes les étapes du `Dockerfile`, ce qui a parfaitement déclenché l'alerte critique.
+
+- **Questions en attente :** Aucune pour le moment. Nous avons bien compris l'intérêt de la règle `fetch-depth: 0` pour Gitleaks (qui doit lire tout l'historique) et comment GitHub Actions gère les dépendances entre les jobs.
+
+- **Temps passé et prochaines étapes :** Environ 1 jour de travail en binôme. La chaîne de développement est maintenant robuste et sécurisée. **Prochaine étape :** Le Jalon 5 pour faire sortir l'application de GitHub et la déployer sur le web !
+
+## Le 13 Juillet 2026
+
+- **Ce que j'ai fait :** Aujourd'hui, j'ai finalisé le Jalon 4 sur le DevSecOps. J'ai transformé les outils de sécurité mis en place par Youssef en véritables "bloqueurs". J'ai modifié le fichier `ci.yml` pour que Trivy fasse planter le pipeline (`exit-code: 1`) s'il trouve une faille `CRITICAL`. J'ai aussi ajouté la condition `needs` pour empêcher la publication Docker si la sécurité échoue. Enfin, j'ai simulé une faille en utilisant l'image `node:14-buster` pour prouver le blocage, puis j'ai corrigé avec `node:20-alpine`.
+- **Ce qui me bloque :** Plus rien du tout ! J'ai eu un petit blocage au moment de tester la faille car Trivy ne détectait rien avec `node:14-alpine` (l'image finale était trop propre ou je ne modifiais pas la bonne étape du _multi-stage build_), mais le passage sur une image basée sur Debian (Buster) a très bien marché pour simuler l'alerte.
+- **Ce que je vais faire ensuite :** Clôturer ce jalon, puis attaquer le Jalon 5 pour déployer notre application sur un vrai serveur.
+- **Temps passé :** Environ 3 heures pour la configuration, les tests d'échec et les corrections.
+
+---
+
+### Bilan du jalon 3 : Automatiser les tests et la construction
+
+**Dates :** 12 Juillet 2026
+
+- **Objectif rappelé en une phrase :** Mettre en place un pipeline d'Intégration Continue (CI/CD) pour exécuter automatiquement nos tests et construire notre image Docker à chaque modification, afin de garantir que l'on ne fusionne jamais de code cassé.
+
+- **Ce que nous avons réalisé :**
+  - **Côté Yousef :** Il a posé d'excellentes fondations en créant le fichier de workflow GitHub Actions (`ci.yml`). Il a configuré l'installation de Node.js, le cache npm pour accélérer le processus, et a écrit le premier test unitaire "volontairement cassé" (1+1=3) pour vérifier que le pipeline bloquait bien en cas d'erreur.
+  - **De mon côté :** J'ai finalisé l'intégration. J'ai remplacé les tests basiques par un vrai test de logique métier en créant une fonction de calcul de TVA (`calculs.ts`) pour tester l'application en conditions réelles. J'ai également finalisé la configuration pour que l'image Docker soit poussée sur le GitHub Container Registry (GHCR) uniquement lors d'une fusion sur la branche `main`. Enfin, j'ai généré et ajouté le badge de statut CI tout en haut de notre `README.md`.
+
+- **Preuves (captures, journaux, liens) :**
+  - **Lien du workflow :** https://github.com/abdellah-get/fsm-docker/actions
+  - **Lien de l'image publiée :** https://github.com/abdellah-get/fsm-docker/pkgs/container/fsm-docker
+  - **Capture d'une exécution réussie :** ![Pipeline au vert](./captures/ci-success.png)
+  - **Preuve de l'échec suivi de la correction :** ![Pipeline en échec](./captures/ci-echec.png)
+
+- **Critères validés :**
+  - [x] Une pull request déclenche le pipeline, et celui-ci passe au vert.
+  - [x] Quand un test est cassé volontairement, le pipeline échoue.
+  - [x] L'image Docker est bien publiée sur le registre GHCR.
+  - [x] Le badge de statut est visible dans le README.
+
+- **Difficultés rencontrées et solutions :**
+  - **Le piège du navigateur :** Je voulais initialement tester notre fichier `pdfGenerator.ts`, mais je me suis rendu compte que la librairie PDF dépendait du navigateur. Lancer ce test sur les serveurs aveugles de GitHub aurait fait planter le pipeline. **Solution :** J'ai créé une fonction utilitaire (`calculs.ts`) purement algorithmique, facile et sûre à tester.
+  - **Sécuriser la publication Docker :** Il fallait s'assurer que l'image ne se publie pas si le code est cassé. **Solution :** Nous avons bien compris et utilisé l'instruction `needs: test` dans notre fichier YAML pour créer une dépendance stricte entre les étapes.
+
+- **Questions en attente :** Aucune pour l'instant.
+
+- **Temps passé et prochaines étapes :** Environ 4h
+  - **Prochaine étape :** puis attaquer le Jalon 4 :Sécuriser la chaîne.
+
+## Le 12 Juillet
 
 - **Ce que j'ai fait :** Finalisation de la partie CI/CD pour le Jalon 3 ! Mon binôme avait super bien préparé le terrain avec la structure du fichier ci.yml, donc je me suis concentré sur l'intégration finale. J'ai remplacé les tests basiques "bouche-trou" par de vrais tests unitaires liés à notre application. J'ai créé un fichier calculs.ts dans le dossier utils pour tester notre logique métier. J'ai aussi généré et intégré le badge de statut dynamique GitHub Actions au tout début de notre README.md. J'ai push tout ça proprement sur une nouvelle branche pour vérifier que tout fonctionne avant d'envoyer sur main.
 
@@ -8,9 +75,9 @@ Le 12 Juillet (ou la date du jour)
 
 - **Ce que je vais faire ensuite :** Ouvrir une Pull Request pour fusionner ma branche vers main. C'est ça qui déclenchera la vraie magie : je vais surveiller que le pipeline passe bien au vert, que mon badge sur le README se met à jour, et surtout, je vais aller récupérer le lien de notre image Docker qui sera automatiquement poussée sur le registre GHCR. Il ne restera plus qu'à réunir les liens et les captures pour le bilan.
 
-- **Temps passé :** 3h (beaucoup d'exploration et de lecture pour bien comprendre les coulisses des serveurs GitHub Actions).
+- **Temps passé :** 2h (beaucoup d'exploration et de lecture pour bien comprendre les coulisses des serveurs GitHub Actions).
 
-## Jalon 2 : Mettre l'application dans des conteneurs
+### Bilan du Jalon 2 : Mettre l'application dans des conteneurs
 
 **Dates :** du 08 Juillet au 11 Juillet
 

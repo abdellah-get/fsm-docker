@@ -16,6 +16,38 @@ jobs:
   # ---------------------------------------------------
   # TÂCHE 1 : TESTS
   # ---------------------------------------------------
+  security-scan:
+    name: 🔒 Scan des secrets (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Récupérer le code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Crucial : demande à GitHub de récupérer tout l'historique pour scanner tous les commits
+
+      - name: 🕵️ Lancer Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  security-image:
+    name: 🐳 Analyse de vulnérabilités (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: 🔨 Construire l'image localement
+        # On construit une image temporaire juste pour l'analyser
+        run: docker build -t fsm-image-local ./web-admin
+
+      - name: 🕵️ Analyser l'image avec Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "fsm-image-local"
+          format: "table"
+          # Important : On met 0 pour l'instant pour NE PAS bloquer le pipeline
+          exit-code: "1"
+          severity: "CRITICAL"
   test:
     name: 🧪 Tests & Vérifications
     runs-on: ubuntu-latest
@@ -45,7 +77,7 @@ jobs:
   # ---------------------------------------------------
   build-and-push:
     name: 🐳 Construction & Publication Docker
-    needs: test # Ne s'exécute QUE si les tests (ci-dessus) réussissent !
+    needs: [test, security-scan, security-image]
     runs-on: ubuntu-latest
     permissions:
       contents: read
