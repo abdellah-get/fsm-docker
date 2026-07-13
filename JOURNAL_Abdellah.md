@@ -14,6 +14,7 @@
   - **Lien du workflow CI final :** https://github.com/abdellah-get/fsm-docker/blob/main/.github/workflows/ci.yml
   - **Capture d'un blocage sur une vulnérabilité :** ![Trivy bloque le pipeline](./captures/jalon4-trivy-fail.png)
   - **Preuve de sa correction :** ![Pipeline sécurisé au vert](./captures/jalon4-trivy-success.png)
+  - **Démonstration Gitleaks :** [Lien vers la PR ou capture de l'échec Gitleaks] ![gitleaks bloque password](./captures/gitleaks_fonction.png)
 
 - **Critères validés :**
   - [x] Le pipeline s'arrête bien sur une vulnérabilité critique.
