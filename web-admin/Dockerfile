@@ -1,7 +1,7 @@
 # ==========================================
 # ÉTAPE 1 : Installation des dépendances
 # ==========================================
-FROM node:20-alpine AS deps
+FROM node:14-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
