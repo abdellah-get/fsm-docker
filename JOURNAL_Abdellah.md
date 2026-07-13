@@ -1,5 +1,41 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+### Bilan du jalon 4 : Sécuriser la chaîne (DevSecOps)
+
+**Dates :** 13 Juillet 2026
+
+- **Objectif rappelé en une phrase :** Intégrer des contrôles de sécurité automatisés (scan de secrets et de vulnérabilités Docker) directement dans notre pipeline CI/CD pour empêcher le déploiement de code ou d'images dangereuses.
+
+- **Ce que nous avons réalisé :**
+  - **Côté Youssef :** Il a configuré l'outil Gitleaks pour scanner tout l'historique du dépôt à la recherche de mots de passe ou de clés API oubliés. Il a également ajouté l'étape de scan d'image Docker avec Trivy.
+  - **De mon côté :** J'ai activé les garde-fous. J'ai configuré Trivy pour qu'il échoue strictement en cas de vulnérabilité `CRITICAL`. J'ai lié le job de construction Docker pour qu'il dépende du succès des scans de sécurité. J'ai ensuite prouvé que le pipeline jouait bien son rôle en le sabotant volontairement avec une vieille image pleine de failles (`node:14-buster`), avant de corriger le tir en repassant sur `node:20-alpine`.
+
+- **Preuves (captures, journaux, liens) :**
+  - **Lien du workflow CI final :** https://github.com/abdellah-get/fsm-docker/blob/main/.github/workflows/ci.yml
+  - **Capture d'un blocage sur une vulnérabilité :** ![Trivy bloque le pipeline](./captures/jalon4-trivy-fail.png)
+  - **Preuve de sa correction :** ![Pipeline sécurisé au vert](./captures/jalon4-trivy-success.png)
+
+- **Critères validés :**
+  - [x] Le pipeline s'arrête bien sur une vulnérabilité critique.
+  - [x] Un secret ajouté par erreur est détecté.
+  - [x] Un rapport d'analyse est produit et consultable (dans les logs GitHub Actions).
+
+- **Difficultés rencontrées et solutions :**
+  - _Le piège du scanner intelligent :_ Lors de ma première simulation d'échec, Trivy laissait passer mon image `node:14-alpine` comme si elle était sécurisée. J'ai appris que Trivy ne scanne que l'image finale produite par le _multi-stage build_, et que les images Alpine sont souvent très propres. _Solution :_ Pour prouver le blocage, j'ai forcé l'utilisation d'une image Debian périmée (`node:14-buster`) sur toutes les étapes du `Dockerfile`, ce qui a parfaitement déclenché l'alerte critique.
+
+- **Questions en attente :** Aucune pour le moment. Nous avons bien compris l'intérêt de la règle `fetch-depth: 0` pour Gitleaks (qui doit lire tout l'historique) et comment GitHub Actions gère les dépendances entre les jobs.
+
+- **Temps passé et prochaines étapes :** Environ 1 jour de travail en binôme. La chaîne de développement est maintenant robuste et sécurisée. **Prochaine étape :** Le Jalon 5 pour faire sortir l'application de GitHub et la déployer sur le web !
+
+## Le 13 Juillet 2026
+
+- **Ce que j'ai fait :** Aujourd'hui, j'ai finalisé le Jalon 4 sur le DevSecOps. J'ai transformé les outils de sécurité mis en place par Youssef en véritables "bloqueurs". J'ai modifié le fichier `ci.yml` pour que Trivy fasse planter le pipeline (`exit-code: 1`) s'il trouve une faille `CRITICAL`. J'ai aussi ajouté la condition `needs` pour empêcher la publication Docker si la sécurité échoue. Enfin, j'ai simulé une faille en utilisant l'image `node:14-buster` pour prouver le blocage, puis j'ai corrigé avec `node:20-alpine`.
+- **Ce qui me bloque :** Plus rien du tout ! J'ai eu un petit blocage au moment de tester la faille car Trivy ne détectait rien avec `node:14-alpine` (l'image finale était trop propre ou je ne modifiais pas la bonne étape du _multi-stage build_), mais le passage sur une image basée sur Debian (Buster) a très bien marché pour simuler l'alerte.
+- **Ce que je vais faire ensuite :** Clôturer ce jalon, puis attaquer le Jalon 5 pour déployer notre application sur un vrai serveur.
+- **Temps passé :** Environ 3 heures pour la configuration, les tests d'échec et les corrections.
+
+---
+
 ### Bilan du jalon 3 : Automatiser les tests et la construction
 
 **Dates :** 12 Juillet 2026
