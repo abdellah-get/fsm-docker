@@ -1,7 +1,7 @@
 # ==========================================
 # ÉTAPE 1 : Installation des dépendances
 # ==========================================
-FROM node:14-alpine AS deps
+FROM node:14-buster AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN npm install
 # ==========================================
 # ÉTAPE 2 : Construction (Build)
 # ==========================================
-FROM node:20-alpine AS builder
+FROM node:14-buster AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -26,7 +26,7 @@ RUN npm run build
 # ==========================================
 # ÉTAPE 3 : L'image finale ultra-légère (Runner)
 # ==========================================
-FROM node:20-alpine AS runner
+FROM node:14-buster AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
