@@ -1,5 +1,24 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+Le 15 juillet
+
+- **Ce que j'ai fait :**
+  Mise en place et automatisation complète du pipeline CI/CD sur GitHub Actions pour le Jalon 5. J'ai réussi à intégrer toutes les étapes : scans de sécurité (Gitleaks, Trivy), tests unitaires, build et publication de l'image Docker, déploiement automatique sur Railway et enfin le test de santé (Health Check) via un script curl.
+  Pour y arriver, j'ai résolu plusieurs erreurs techniques successives :
+
+1. Suppression du flag obsolète `--production` de la CLI Railway.
+2. Ajout du flag `--service` pour indiquer à Railway sur quel service déployer (car mon projet contient plusieurs services).
+3. Correction de l'URL du Health Check pour éviter l'erreur 404 et laisser le temps à Railway de démarrer.
+   Désormais, tout le pipeline passe au vert !
+
+- **Ce qui me bloque :**
+  Rien du tout ! Toutes les étapes fonctionnent parfaitement et le site est en ligne.
+
+- **Ce que je vais faire ensuite :**
+  Faire une petite modification esthétique ou textuelle dans le code en local, la push sur la branche principale, et observer le déploiement se mettre à jour tout seul pour valider définitivement le flux. Ensuite, je pourrai préparer la démonstration du Jalon 5 avec mon binôme.
+
+- **Temps passé :** 4 heures
+
 **Dates :** 14 Juillet 2026
 
 • Ce que j'ai fait :
