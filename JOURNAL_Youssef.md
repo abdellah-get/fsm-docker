@@ -1,5 +1,45 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Compte rendu -- 15 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Outils de déploiement (Stack de production) :** Mise en production réussie en s'appuyant sur deux outils principaux :
+  - **Railway :** Utilisé pour l'hébergement du conteneur Docker contenant l'application Next.js, permettant un déploiement continu.
+  - **Neon (Neon.tech) :** Utilisé pour l'hébergement de la base de données PostgreSQL, assurant la persistance des données.
+- **Déploiement et accès :** Le site est officiellement en ligne sur Railway et totalement fonctionnel.
+- **Collaboration :** Ajout de mon binôme Abdellah sur les espaces de travail Railway et Neon pour faciliter la gestion de l'environnement de production.
+- **Revue de code :** Vérification de la Pull Request de mon binôme et validation (merge) des modifications sur le dépôt.
+- **Clôture de la tâche Jalon 5 (#38) :** Définition de la stratégie de rollback (retour arrière) via l'historique des déploiements de Railway, et documentation de la procédure dans le fichier `README.md`.
+- **Configuration de l'environnement de production :** Ajout des variables d'environnement critiques sur Railway (`DATABASE_URL`, `NEXTAUTH_SECRET`).
+
+## 2. Difficultés techniques rencontrées et résolues
+
+- **Erreur 404 (Not Found) initiale :** L'application affichait une page d'erreur lors de l'accès à l'URL de base publique. _Résolution :_ Ajout du chemin `/login` à la fin de l'URL publique, ce qui a permis d'accéder correctement à l'interface d'authentification du portail.
+- **Mauvaise détection du port :** Le service Railway était configuré sur le port 8080 par défaut, alors que l'application Next.js nécessite le port 3000. _Résolution :_ Ajustement manuel du port via les paramètres réseau de Railway.
+- **Problème de connexion (Authentification) :** L'authentification échouait car l'insertion initiale du mot de passe se faisait en clair dans la base de données. _Résolution :_ Consultation des logs de déploiement sur Railway pour identifier et récupérer le véritable hash du mot de passe généré par le système, qui a ensuite été intégré manuellement dans la table correspondante de la base de données Neon.
+
+## 3. Prochaines étapes
+
+- **Préparation du bilan :** Collecter et préparer l'ensemble des captures d'écran nécessaires pour constituer les preuves du bilan final du jalon.
+- **Passage de relais :** Donner la main à mon binôme Abdellah afin qu'il puisse prendre en charge et finaliser les autres tâches restantes du jalon. Je reste bien sûr joignable et disponible pour l'épauler ou prendre le relais sur un point spécifique si nécessaire.
+
+## 4. Temps investi
+
+- **Durée totale :** 7 heures
+
+# Compte rendu -- 14 Juillet
+
+## Réalisations:
+
+Je n'ai pas codé aujourd'hui
+
+## Motif:
+
+Engagements personnels impérieux
+
 ## Jalon 4 : Sécuriser la chaîne (DevSecOps)
 
 **Dates :** 13 Juillet
