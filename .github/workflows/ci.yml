@@ -14,7 +14,7 @@ env:
 
 jobs:
   # ---------------------------------------------------
-  # TÂCHE 1 : TESTS
+  # TÂCHE 1 : TESTS & SÉCURITÉ
   # ---------------------------------------------------
   security-scan:
     name: 🔒 Scan des secrets (Gitleaks)
@@ -23,12 +23,13 @@ jobs:
       - name: 🛎️ Récupérer le code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Crucial : demande à GitHub de récupérer tout l'historique pour scanner tous les commits
+          fetch-depth: 0
 
       - name: 🕵️ Lancer Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   security-image:
     name: 🐳 Analyse de vulnérabilités (Trivy)
     runs-on: ubuntu-latest
@@ -37,7 +38,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🔨 Construire l'image localement
-        # On construit une image temporaire juste pour l'analyser
         run: docker build -t fsm-image-local ./web-admin
 
       - name: 🕵️ Analyser l'image avec Trivy
@@ -45,15 +45,15 @@ jobs:
         with:
           image-ref: "fsm-image-local"
           format: "table"
-          # Important : On met 0 pour l'instant pour NE PAS bloquer le pipeline
           exit-code: "1"
           severity: "CRITICAL"
+
   test:
     name: 🧪 Tests & Vérifications
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./web-admin # On se place dans le dossier web pour npm
+        working-directory: ./web-admin
 
     steps:
       - name: 🛎️ Récupérer le code
@@ -63,7 +63,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm" # Mise en cache pour accélérer le pipeline
+          cache: "npm"
           cache-dependency-path: "./web-admin/package-lock.json"
 
       - name: 📦 Installer les dépendances
@@ -88,7 +88,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🔑 Connexion au registre GitHub (GHCR)
-        # On ne se connecte pas si c'est juste une proposition de modification (PR)
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
@@ -106,7 +105,35 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./web-admin
-          # On ne publie la nouvelle image que lorsqu'on fusionne sur "main"
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  # ---------------------------------------------------
+  # TÂCHE 3 : DÉPLOIEMENT & HEALTH CHECK (Jalon 5)
+  # ---------------------------------------------------
+  deploy:
+    name: 🚀 Déploiement sur Railway
+    needs: build-and-push # Bloque le déploiement si le build échoue
+    # On ne déploie QUE si on est sur la branche 'main' (pas lors d'une PR)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛎️ Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: 🚂 Installer Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: 📤 Déployer automatiquement
+        run: railway up --detach --service fsm-docker
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 🩺 Vérifier la santé du site (Health Check)
+        run: |
+          echo "Attente du démarrage du serveur sur Railway..."
+          sleep 20
+          # Remplacer cette URL par la vraie URL Railway de ton application !
+          curl -f --retry 5 --retry-delay 10 https://fsm-docker-production.up.railway.app/login || exit 1
