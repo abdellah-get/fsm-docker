@@ -1,5 +1,18 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+**Dates :** 14 Juillet 2026
+
+• Ce que j'ai fait :
+J'ai travaillé sur la migration de notre base de données et la mise en ligne du projet. J'ai réussi à configurer et connecter la base de données en ligne (Neon) via DBeaver (en réglant les problèmes de SSL et d'exécution du script d'initialisation). De plus, j'ai pris l'initiative de m'occuper du déploiement sur Render. Même si c'était normalement la tâche de mon binôme, je trouvais ça super intéressant d'apprendre comment tout s'emboîte (serveur, base de données, variables d'environnement) pour rendre le site accessible publiquement ! Le service est enfin "Live".
+
+• Ce qui me bloque :
+J'ai été un peu ralenti par des erreurs de DBeaver (qui ne lisait pas tout le fichier SQL au début) et par une erreur 502 "Bad Gateway" sur Render au premier lancement. Je dois maintenant m'assurer que toutes les clés de notre application ne posent plus de problème en production.
+
+• Ce que je vais faire ensuite :
+Je vais injecter toutes nos variables d'environnement (celles de mon fichier `.env.local`) directement dans le dashboard de Render pour que l'application puisse fonctionner à 100%. Ensuite, je ferai un test complet de l'interface en ligne pour vérifier que les tables se remplissent bien.
+
+• Temps passé : 4 heures
+
 ### Bilan du jalon 4 : Sécuriser la chaîne (DevSecOps)
 
 **Dates :** 13 Juillet 2026
