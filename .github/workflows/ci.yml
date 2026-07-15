@@ -136,4 +136,4 @@ jobs:
           echo "Attente du démarrage du serveur sur Railway..."
           sleep 20
           # Remplacer cette URL par la vraie URL Railway de ton application !
-          curl -f --retry 5 --retry-delay 10 https://fsm-docker-production.up.railway.app || exit 1
+          curl -f --retry 5 --retry-delay 10 https://fsm-docker-production.up.railway.app/login || exit 1
