@@ -1,5 +1,57 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+**Bilan du jalon 5 :** Déployer automatiquement  
+**Dates :** du 14 juillet au 15 juillet 2026
+
+### • Objectif rappelé en une phrase :
+
+Mettre en place un pipeline CI/CD complet pour déployer automatiquement notre application (serveur et base de données) à chaque fusion réussie sur la branche principale, tout en sécurisant nos variables d'environnement.
+
+### • Ce que j'ai réalisé :
+
+- J'ai pris l'initiative de m'occuper du déploiement global (même si le binôme devait en faire une partie, je trouvais ça super intéressant de comprendre comment tout s'emboîte !).
+- J'ai migré et configuré notre base de données en ligne en utilisant **Neon**, et je m'y suis connecté via DBeaver pour l'initialisation.
+- J'ai créé un pipeline GitHub Actions complet qui inclut : les scans de sécurité (Gitleaks, Trivy), les tests unitaires, le build, et la publication de l'image Docker.
+- J'ai automatisé le déploiement de notre service **web_admin** sur **Railway** (après un premier essai sur Render pour comprendre les mécaniques d'hébergement).
+- J'ai ajouté un script _Health Check_ avec `curl` en fin de pipeline pour m'assurer que l'application répond bien une fois en ligne.
+
+### • Preuves (captures, journaux, liens des commits et de la démonstration) :
+
+- **Lien de l'application en ligne :** https://fsm-docker-production.up.railway.app/login
+- **Schéma du flux de déploiement :** ![schéma de l'architecture CI/CD](./captures/jalon4-trivy-success.png)
+- **Lien GitHub vers le pipeline :** https://github.com/abdellah-get/fsm-docker/actions/runs/29456993275
+- **Note sur le retour arrière (Rollback) :**
+  En cas de problème critique en production (site inaccessible, bug bloquant), voici la procédure validée pour redéployer la version stable précédente :
+  1. **Accéder à l'hébergeur :** Se connecter au tableau de bord Railway et sélectionner le service `fsm-docker`.
+  2. **Ouvrir l'historique :** Aller dans l'onglet _Deployments_.
+  3. **Identifier la version stable :** Parcourir la liste et repérer le dernier déploiement valide (marqué d'un succès) précédant l'incident.
+  4. **Lancer le rollback :** Cliquer sur les trois petits points (`...`) situés à droite de ce déploiement spécifique.
+  5. **Redéployer :** Cliquer sur _Redeploy_. Railway va instantanément relancer le conteneur en utilisant l'ancienne image Docker fonctionnelle.
+  6. **Validation :** Une fois le service relancé, tester l'URL de production pour confirmer que le site est de nouveau opérationnel.
+
+### • Critères validés :
+
+- Aucun secret n'est visible en clair dans le dépôt (les clés de Neon et Railway sont dans les _Secrets_ GitHub).
+- Le déploiement ne part jamais si la vérification (scans ou tests) a échoué.
+- L'application répond bien après la mise en ligne (validé par le Health Check).
+- Changement visible automatique et test du retour arrière (en cours de finalisation pour la démo).
+
+### • Difficultés rencontrées et solutions :
+
+- **Problème de base de données :** DBeaver ne lisait pas tout le fichier SQL au début et j'ai eu des soucis de SSL avec Neon. J'ai résolu ça en ajustant les paramètres de connexion.
+- **Problème de variables d'environnement :** Une erreur 502 "Bad Gateway" au premier lancement, corrigée en injectant soigneusement toutes les variables de notre `.env.local` dans le dashboard de l'hébergeur.
+- **Problème de CLI Railway dans GitHub Actions :** Le pipeline plantait lors du déploiement. J'ai dû supprimer le flag obsolète `--production` et ajouter le flag `--service` pour spécifier qu'on déployait le `web_admin` (car on a plusieurs services).
+- **Problème de Health Check :** J'obtenais une erreur 404 car l'URL était incorrecte et Railway n'avait pas eu le temps de démarrer. J'ai corrigé l'URL cible et ajouté un délai pour laisser le temps au conteneur de se lancer.
+
+### • Questions en attente :
+
+Rien du tout ! Le pipeline est entièrement vert et toutes les étapes s'enchaînent parfaitement.
+
+### • Temps passé et prochaines étapes :
+
+- **Temps passé :** 8 heures (4h le 14/07 + 4h le 15/07).
+- **Prochaines étapes :** commnecer le jalon suivant
+
 Le 15 juillet
 
 - **Ce que j'ai fait :**
