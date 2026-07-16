@@ -1,5 +1,49 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+## Jalon 5 : Déployer automatiquement
+
+**Dates :** 15 Juillet
+
+### Objectif
+
+Mettre en production l'application conteneurisée et sa base de données en s'appuyant sur des plateformes cloud, configurer correctement l'environnement de production et assurer la gestion des accès et des stratégies de retour arrière (rollback).
+
+### Ce que j'ai accompli
+
+- **Mise en place de la stack de production :** Déploiement continu du conteneur Docker contenant l'application Next.js sur **Railway** et hébergement de la base de données PostgreSQL sur **Neon (Neon.tech)** pour la persistance des données.
+- **Configuration de l'environnement :** Ajout des variables d'environnement critiques (`DATABASE_URL`, `NEXTAUTH_SECRET`) directement dans les paramètres de Railway.
+- **Stratégie de Rollback (Clôture issue #38) :** Définition de la stratégie de retour arrière via l'historique des déploiements de Railway et documentation de la procédure complète dans le fichier `README.md`.
+- **Collaboration et revue de code :** Ajout de mon binôme Abdellah sur les espaces de travail Railway et Neon pour faciliter la gestion de l'environnement. Vérification de sa Pull Request et validation (merge) des modifications sur le dépôt principal.
+- **Validation de la mise en ligne :** Le site est officiellement en ligne, accessible et totalement fonctionnel.
+
+### Preuves
+
+- **Lien du dépôt :** https://github.com/abdellah-get/fsm-docker.git
+- **Lien de l'application en ligne :** fsm-docker-production.up.railway.app/login
+- **Captures d'écran :**
+  - **Application en ligne sur Railway :** ![Déploiement réussi sur Railway](./captures/railway_deploy.jfif)
+  - **Configuration des variables :** ![Configuration Railway](./captures/railway_config.jfif)
+  - **Base de données sur Neon :** ![Base de données Neon](./captures/neon_db.jfif)
+
+### Difficultés rencontrées et solutions
+
+- **Erreur 404 (Not Found) initiale :** L'application affichait une page d'erreur lors de l'accès à l'URL de base publique.
+  - _Solution :_ Ajout du chemin `/login` à la fin de l'URL publique, ce qui a permis d'accéder correctement à l'interface d'authentification du portail.
+- **Mauvaise détection du port :** Le service Railway était configuré sur le port 8080 par défaut, alors que l'application Next.js nécessite le port 3000.
+  - _Solution :_ Ajustement manuel du port via les paramètres réseau de Railway.
+- **Problème de connexion (Authentification) :** L'authentification échouait car l'insertion initiale du mot de passe se faisait en clair dans la base de données.
+  - _Solution :_ Consultation des logs de déploiement sur Railway pour identifier et récupérer le véritable hash du mot de passe généré par le système. Ce hash a ensuite été intégré manuellement dans la table correspondante de la base de données Neon.
+
+### Questions en attente
+
+- Pas de question pour le moment.
+
+### Temps passé et Prochaines étapes
+
+- **Temps passé :** 7h
+- **Prochaine étape :**
+  - Entamer le Jalon 6.
+
 # Compte rendu -- 15 Juillet
 
 ---
