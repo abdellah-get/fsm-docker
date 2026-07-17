@@ -1,5 +1,19 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+**Le 17 juillet**
+
+**Ce que j'ai fait :**
+On a enfin mis en commun notre travail ! Mon binôme Youssef a géré la rédaction du fichier `main.tf` pour l'infrastructure, et je me suis occupé de tout le reste (le playbook Ansible, la gestion des variables, et le déploiement). Hier, nous n'avions pas écrit de code car nous avons pris une décision importante : on voulait toucher à un vrai serveur AWS dans les conditions du réel, plutôt que de se contenter d'une simple image Docker en local. On a donc passé notre temps d'hier à configurer le cloud. Aujourd'hui, j'ai tout relié et testé : l'application est en ligne ! J'ai aussi réglé un petit souci d'accès sur mobile (Chrome qui forçait le HTTPS) et j'ai nettoyé notre projet en créant un nouveau dépôt GitHub dédié pour bien séparer l'infrastructure de l'application.
+🔗 **Le lien de notre nouveau dépôt :** [https://github.com/abdellah-get/fsm-infrastructure](https://github.com/abdellah-get/fsm-infrastructure) (j'y ai configuré un `.gitignore` strict pour protéger nos clés et mots de passe).
+
+**Ce qui me bloque :**
+Le code fonctionne parfaitement, mais il reste quelques petits points d'attention et de friction : 1. **La configuration des accès pour Youssef :** Je dois m'assurer que les droits IAM que je vais lui créer sont suffisants pour Terraform, sinon il risque d'avoir des erreurs "Access Denied" de son côté en essayant de reprendre le projet. 2. **Le HTTPS pour la suite :** Le bug d'accès sur mobile m'a fait réaliser qu'utiliser une simple adresse IP en HTTP ne sera pas viable sur le long terme. Ce n'est pas un blocage pour ce jalon, mais je sais qu'il faudra qu'on trouve comment lier un nom de domaine et configurer un certificat SSL (HTTPS) pour la suite.
+
+**Ce que je vais faire ensuite :**
+Enregistrer la vidéo de démonstration exigée pour le livrable (détruire l'infrastructure avec `terraform destroy` puis la recréer avec `terraform apply`), et transmettre les accès IAM de manière sécurisée à Youssef via un lien éphémère puis finaliser le jalon.
+
+**Temps passé :** 12 heures
+
 **Bilan du jalon 5 :** Déployer automatiquement  
 **Dates :** du 14 juillet au 15 juillet 2026
 
@@ -18,7 +32,7 @@ Mettre en place un pipeline CI/CD complet pour déployer automatiquement notre a
 ### • Preuves (captures, journaux, liens des commits et de la démonstration) :
 
 - **Lien de l'application en ligne :** https://fsm-docker-production.up.railway.app/login
-- **Schéma du flux de déploiement :** ![schéma de l'architecture CI/CD](./captures/jalon4-trivy-success.png)
+- **Schéma du flux de déploiement :** ![schéma de l'architecture CI/CD](./captures/jalon5-pipline-vert.png)
 - **Lien GitHub vers le pipeline :** https://github.com/abdellah-get/fsm-docker/actions/runs/29456993275
 - **Note sur le retour arrière (Rollback) :**
   En cas de problème critique en production (site inaccessible, bug bloquant), voici la procédure validée pour redéployer la version stable précédente :
