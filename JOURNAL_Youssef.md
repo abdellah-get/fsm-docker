@@ -1,5 +1,42 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 17 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Infrastructure as Code (IaC) :** Initialisation et configuration réussies de l'environnement Terraform dans un dossier dédié (`/terraform`) lié au fournisseur Cloud AWS.
+- **Authentification et Accès AWS :** Récupération sécurisée des clés d'accès de mon binôme Abdellah et configuration de l'environnement de travail local via la commande `aws configure` pour l'authentification auprès de l'AWS CLI.
+- **Provisionnement de l'infrastructure (AWS) :**
+  - Rédaction du script de configuration `main.tf` pour automatiser la création des ressources de production.
+  - Exécution réussie des commandes `terraform init` (téléchargement du provider AWS v5.100.0) et `terraform plan`.
+  - Déploiement de l'infrastructure via `terraform apply` permettant de générer une instance EC2 (serveur Ubuntu nu `t3.micro`) avec une adresse IP publique fixe (`35.180.190.47`).
+- **Gestion des accès et de la sécurité :** Création d'une clé d'authentification SSH unique (`jalon6-key-youssef`) et d'un groupe de sécurité (`jalon6-sg-youssef`) autorisant le trafic entrant sur les ports 22 (SSH) et 80 (HTTP).
+- **Validation du cycle de vie des ressources :** Exécution et validation de la commande `terraform destroy` pour tester la reproductibilité et la destruction propre de l'infrastructure à la demande, remplissant le critère d'acceptation de la tâche..
+
+## 2. Difficultés techniques rencontrées et résolues
+
+- **Erreur de ressources dupliquées (AWS Duplicate KeyPair/SG) :** Échec initial lors du `terraform apply` en raison de conflits de noms avec des ressources déjà existantes sur le compte AWS avant d'avoir des identifiants isolés. _Résolution :_ Personnalisation et isolation des ressources en renommant la paire de clés et le Security Group avec un identifiant unique propre (`-youssef`).
+
+## 3. Prochaines étapes
+
+- **Passage de relais :** Donner la main à mon binôme Abdellah afin qu'il prenne en charge et finalise la Tâche 2 (#51) concernant l'initialisation d'Ansible et la validation de la connectivité.
+
+## 4. Temps investi
+
+- **Durée totale :** 6 heures
+
+# Journal de bord – 17 Juillet
+
+## Réalisations
+
+Je n'ai pas codé aujourd'hui
+
+## Motif
+
+nous avons plutôt discuté avec mon binôme et décidé d'héberger notre projet sur le serveur AWS. J'ai ensuite attendu qu'il termine l'hébergement de l'application, mais cela a pris beaucoup de temps en raison de la complexité de la procédure.
+
 ## Jalon 5 : Déployer automatiquement
 
 **Dates :** 15 Juillet
