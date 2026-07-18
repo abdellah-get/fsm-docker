@@ -1,5 +1,34 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 18 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Intégration collaborative :** Récupération réussie du travail et des scripts de configuration initialisés par mon binôme Abdellah afin de tester et de consolider l'ensemble du pipeline sur mon environnement.
+- **Préparation de l'environnement d'automatisation :** Configuration d'un environnement Linux natif via WSL (Ubuntu) sur hôte Windows 10 pour garantir la compatibilité des outils de déploiement.
+- **Installation d'Ansible :** Mise en place d'Ansible (via `pipx`) et résolution des dépendances et variables d'environnement (`PATH`) pour l'exécution des playbooks.
+- **Liaison Terraform - Ansible :** Configuration du fichier d'inventaire (`inventory.ini`) pour cibler dynamiquement l'adresse IP publique de l'instance EC2 provisionnée par Terraform.
+- **Déploiement de l'application (Tâche 5) :**
+  - Exécution complète du script `playbook.yml` automatisant les mises à jour système, l'installation des dépendances Python, et l'installation de Docker sur le serveur distant.
+  - Lancement réussi du conteneur de l'application web Next.js en injectant de manière sécurisée les variables de connexion à la base de données (Neon PostgreSQL) et les clés secrètes d'authentification.
+- **Validation du cycle de déploiement :** Vérification de l'idempotence et de la viabilité de l'infrastructure via un cycle complet `terraform destroy` puis `terraform apply`, suivi du provisionnement Ansible sans intervention manuelle.
+
+## 2. Difficultés techniques rencontrées et résolues
+
+- **Erreur de syntaxe dans l'inventaire Ansible :** L'exécution renvoyait l'erreur `hostname contains invalid characters`, Ansible interprétant les arguments de connexion SSH comme un nom de domaine. _Résolution :_ Restructuration du fichier `inventory.ini` pour s'assurer que l'adresse IP et la directive `ansible_ssh_common_args='-o StrictHostKeyChecking=no'` figurent strictement sur la même ligne.
+- **Variables d'environnement manquantes pour le conteneur :** Le lancement du conteneur Docker par Ansible échouait avec les erreurs `'db_url' is undefined` et `'auth_secret' is undefined`. _Résolution :_ Injection dynamique des identifiants sensibles (`DATABASE_URL` et `NEXTAUTH_SECRET`) au moment de l'exécution en utilisant l'argument `--extra-vars` de la ligne de commande, évitant ainsi d'exposer les mots de passe dans le code source.
+- **Désynchronisation de l'adresse IP après cycle Terraform :** Suite à l'exécution d'un `terraform destroy` suivi d'un `terraform apply` pour tester la reproductibilité, Ansible n'arrivait plus à joindre le serveur car AWS avait attribué une nouvelle IP publique à la nouvelle instance EC2. _Résolution :_ Récupération de la nouvelle IP générée par Terraform et mise à jour manuelle du fichier `inventory.ini` avant de relancer le playbook Ansible.
+
+## 3. Prochaines étapes
+
+- **Préparation du bilan :** Préparer les démonstrations de fin de jalon pour prouver la reproductibilité totale de l'infrastructure (démonstration du cycle de destruction/création propre et du déploiement automatisé).
+
+## 4. Temps investi
+
+- **Durée totale :** 4 heures
+
 # Journal de bord – 17 Juillet
 
 ---
@@ -27,7 +56,7 @@
 
 - **Durée totale :** 6 heures
 
-# Journal de bord – 17 Juillet
+# Journal de bord – 16 Juillet
 
 ## Réalisations
 
