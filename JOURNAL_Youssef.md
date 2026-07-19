@@ -1,5 +1,120 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 19 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Préparation de l'environnement Kubernetes :**
+  - Mise en place d'une architecture allégée adaptée aux contraintes matérielles de la machine locale (8 Go de RAM) en privilégiant `k3d` (K3s dans Docker).
+  - Installation de l'outil en ligne de commande `kubectl` et de `k3d` directement dans l'environnement WSL Ubuntu.
+  - Création et démarrage d'un cluster Kubernetes local à un seul nœud (`mon-cluster`), vérifié et opérationnel (statut `Ready`).
+
+## 2. Difficultés techniques rencontrées et résolues
+
+- **Problème de communication entre k3d et Docker sous WSL :** Échec de la création du cluster Kubernetes avec l'erreur `Cannot connect to the Docker daemon / permission denied` sur le fichier `docker.sock`.
+  - _Résolution :_ Activation de l'intégration WSL dans les paramètres de Docker Desktop, puis ajout de l'utilisateur local au groupe Linux `docker` (`usermod -aG docker`) pour accorder les droits d'exécution sans `sudo`.
+
+## 3. Prochaines étapes
+
+- **Déploiement sur le cluster (Jalon 7) :** Rédiger les manifestes de configuration Kubernetes (fichiers YAML pour le `Deployment` et le `Service`) afin de déployer l'image locale de l'application sur le cluster `k3d`.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures
+
+# BILAN DU JALON 6 – INFRASTRUCTURE AS CODE (IaC) & AUTOMATISATION
+
+---
+
+## 1. Vue d'ensemble des objectifs
+
+Le Jalon 6 avait pour objectif principal de mettre en place une infrastructure cloud entièrement automatisée, reproductible et sécurisée. Pour cela, nous avons combiné deux outils majeurs de l'Infrastructure as Code (IaC) et du provisionnement de configuration :
+
+- **Terraform** pour le provisionnement des ressources cloud sur AWS (instances EC2, groupes de sécurité, clés SSH).
+- **Ansible** pour l'automatisation de la configuration système, l'installation de Docker et le déploiement conteneurisé de l'application web.
+
+---
+
+## 2. Réalisations par phase
+
+### A. Infrastructure as Code avec Terraform (17 Juillet)
+
+- **Initialisation et configuration :** Mise en place d'un dossier dédié `/terraform` configuré pour interagir avec le fournisseur Cloud AWS (provider v5.100.0).
+- **Authentification :** Configuration sécurisée des accès AWS CLI via `aws configure` à partir des clés d'accès partagées.
+- **Provisionnement EC2 :** Rédaction et exécution du fichier `main.tf` permettant de générer une instance EC2 sous Ubuntu (`t3.micro`) dotée d'une adresse IP publique.
+- **Sécurité et Accès :** Création d'une paire de clés SSH dédiée (`jalon6-key-youssef`) et d'un Security Group (`jalon6-sg-youssef`) restreignant les flux aux ports 22 (SSH) et 80 (HTTP).
+- **Validation du cycle de vie :** Test concluant de la destruction (`terraform destroy`) et de la recréation (`terraform apply`) pour valider la reproductibilité de l'infrastructure.
+
+### B. Automatisation, Intégration et Déploiement avec Ansible (18 Juillet)
+
+- **Intégration collaborative :** Fusion et test des scripts et playbooks initiés par mon binôme Abdellah pour valider le pipeline complet sur l'environnement WSL (Ubuntu).
+- **Configuration d'Ansible :** Installation propre via `pipx` et gestion des variables d'environnement PATH.
+- **Liaison Terraform-Ansible :** Configuration dynamique du fichier d'inventaire (`inventory.ini`) pointant vers l'adresse IP publique de l'instance AWS active.
+- **Déploiement de l'application :**
+  - Exécution du `playbook.yml` pour la mise à jour système et l'installation automatisée de Docker.
+  - Lancement du conteneur de l'application Next.js avec injection sécurisée des variables d'environnement (`db_url` pour Neon PostgreSQL et `auth_secret` pour l'authentification).
+- **Idempotence :** Vérification de la robustesse du déploiement via un cycle complet de destruction et reconstruction de l'infrastructure suivi d'une exécution Ansible sans intervention manuelle.
+
+---
+
+## 3. Difficultés techniques rencontrées et résolues
+
+- **Conflit de noms sur AWS (Duplicate KeyPair / Security Group) :**
+  - _Problème :_ Échec du `terraform apply` initial en raison de collisions avec des ressources préexistantes sur le compte partagé.
+  - _Résolution :_ Personnalisation des noms de ressources avec un identifiant unique propre (`-youssef`).
+
+- **Variables d'environnement manquantes dans le conteneur :**
+  - _Problème :_ Erreurs `db_url is undefined` lors du démarrage du conteneur Docker par Ansible.
+  - _Résolution :_ Utilisation systématique de l'argument `--extra-vars` en ligne de commande pour injecter dynamiquement les secrets sans les stocker en clair dans le code source.
+- **Désynchronisation de l'IP après un cycle Terraform :**
+  - _Problème :_ Échec de connexion Ansible après un `destroy`/`apply` car AWS attribue une nouvelle IP publique dynamique.
+  - _Résolution :_ Mise à jour de la nouvelle adresse IP récupérée dans l'inventaire avant de relancer le playbook.
+
+---
+
+## 4. Preuves et Livrables
+
+- **Dépôt Git du projet :** [Lien vers le dépôt GitHub]({https://github.com/abdellah-get/fsm-infrastructure.git})
+- **Pull Requests associées :** #2
+- **Vidéo de démonstration du jalon :** [Lien vers la vidéo de démonstration ]({https://drive.google.com/file/d/1TQOTYc6DG36CWLJjw79BBdiDIAySrnZ-/view?usp=sharing})
+
+---
+
+## 5. Temps investi
+
+- **Total cumulé du Jalon 6 :** 10 heures
+
+# Journal de bord – 18 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Intégration collaborative :** Récupération réussie du travail et des scripts de configuration initialisés par mon binôme Abdellah afin de tester et de consolider l'ensemble du pipeline sur mon environnement.
+- **Préparation de l'environnement d'automatisation :** Configuration d'un environnement Linux natif via WSL (Ubuntu) sur hôte Windows 10 pour garantir la compatibilité des outils de déploiement.
+- **Installation d'Ansible :** Mise en place d'Ansible (via `pipx`) et résolution des dépendances et variables d'environnement (`PATH`) pour l'exécution des playbooks.
+- **Liaison Terraform - Ansible :** Configuration du fichier d'inventaire (`inventory.ini`) pour cibler dynamiquement l'adresse IP publique de l'instance EC2 provisionnée par Terraform.
+- **Déploiement de l'application (Tâche 5) :**
+  - Exécution complète du script `playbook.yml` automatisant les mises à jour système, l'installation des dépendances Python, et l'installation de Docker sur le serveur distant.
+  - Lancement réussi du conteneur de l'application web Next.js en injectant de manière sécurisée les variables de connexion à la base de données (Neon PostgreSQL) et les clés secrètes d'authentification.
+- **Validation du cycle de déploiement :** Vérification de l'idempotence et de la viabilité de l'infrastructure via un cycle complet `terraform destroy` puis `terraform apply`, suivi du provisionnement Ansible sans intervention manuelle.
+
+## 2. Difficultés techniques rencontrées et résolues
+
+- **Erreur de syntaxe dans l'inventaire Ansible :** L'exécution renvoyait l'erreur `hostname contains invalid characters`, Ansible interprétant les arguments de connexion SSH comme un nom de domaine. _Résolution :_ Restructuration du fichier `inventory.ini` pour s'assurer que l'adresse IP et la directive `ansible_ssh_common_args='-o StrictHostKeyChecking=no'` figurent strictement sur la même ligne.
+- **Variables d'environnement manquantes pour le conteneur :** Le lancement du conteneur Docker par Ansible échouait avec les erreurs `'db_url' is undefined` et `'auth_secret' is undefined`. _Résolution :_ Injection dynamique des identifiants sensibles (`DATABASE_URL` et `NEXTAUTH_SECRET`) au moment de l'exécution en utilisant l'argument `--extra-vars` de la ligne de commande, évitant ainsi d'exposer les mots de passe dans le code source.
+- **Désynchronisation de l'adresse IP après cycle Terraform :** Suite à l'exécution d'un `terraform destroy` suivi d'un `terraform apply` pour tester la reproductibilité, Ansible n'arrivait plus à joindre le serveur car AWS avait attribué une nouvelle IP publique à la nouvelle instance EC2. _Résolution :_ Récupération de la nouvelle IP générée par Terraform et mise à jour manuelle du fichier `inventory.ini` avant de relancer le playbook Ansible.
+
+## 3. Prochaines étapes
+
+- **Préparation du bilan :** Préparer les démonstrations de fin de jalon pour prouver la reproductibilité totale de l'infrastructure (démonstration du cycle de destruction/création propre et du déploiement automatisé).
+
+## 4. Temps investi
+
+- **Durée totale :** 4 heures
+
 # Journal de bord – 17 Juillet
 
 ---
@@ -27,7 +142,7 @@
 
 - **Durée totale :** 6 heures
 
-# Journal de bord – 17 Juillet
+# Journal de bord – 16 Juillet
 
 ## Réalisations
 
