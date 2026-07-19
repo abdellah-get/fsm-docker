@@ -1,5 +1,26 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+## Le 19 juillet
+
+- **Lien du site déployé :** [https://fsm-app-morocco.duckdns.org/login](https://fsm-app-morocco.duckdns.org/login)
+
+- **Ce que j'ai fait :**
+  - Mise en place d'une solution de nom de domaine gratuit via DuckDNS (`fsm-app-morocco.duckdns.org`) pour contourner le problème des IPs dynamiques d'AWS sans générer de coûts.
+  - Automatisation dans le playbook Ansible : ajout d'une tâche pour que le serveur mette à jour son adresse IP publique sur DuckDNS tout seul à chaque déploiement.
+  - Gros travail de débogage réseau et système : résolution de l'erreur `ERR_CONNECTION_TIMED_OUT` (vérification des règles du Security Group AWS et des IPs) et correction du lancement de Docker qui plantait à cause des variables secrètes (`db_url` et `auth_secret`) manquantes lors de l'exécution de la commande Ansible.
+  - Correction d'un blocage Terraform (boucle infinie lors du `apply`) causé par la modification de la description d'un Security Group attaché à une instance active.
+  - Mise à niveau de l'infrastructure pour préparer le HTTPS : ouverture du port 443 sur Terraform et configuration d'un Reverse Proxy (Nginx) avec Certbot (Let's Encrypt) dans Ansible.
+
+- **Ce qui me bloque :**
+  - Plus de blocage majeur ! Le site fonctionne, les ports sont ouverts et la connexion entre AWS, Terraform et Ansible est fluide.
+
+- **Ce que je vais faire ensuite :**
+  - Faire un test complet de bout en bout (`terraform destroy` suivi d'un `apply` + exécution d'Ansible) pour certifier que toute l'automatisation (jusqu'à la génération du cadenas HTTPS) fonctionne à 100 % sans intervention manuelle.
+  - Préparer la présentation ou la démonstration vidéo de ce jalon 6 avec mon binôme Youssef.
+
+- **Temps passé :**
+  - Environ 3h - 4h (beaucoup de tests d'intégration, d'allers-retours entre les fichiers de configuration et de débogage des logs).
+
 **Le 17 juillet**
 
 **Ce que j'ai fait :**
