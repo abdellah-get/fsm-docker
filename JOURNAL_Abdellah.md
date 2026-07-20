@@ -1,8 +1,43 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+**Bilan du jalon 6 :** Décrire l'infrastructure par du code
+**Dates :** du 17 juillet au 19 juillet
+
+- **Objectif rappelé en une phrase :**
+  Décrire notre infrastructure par du code (Terraform et Ansible) pour la créer, la configurer et la recréer à l'identique de manière automatisée, sans rien monter à la main.
+
+- **Ce que j'ai réalisé :**
+  - Écriture d'une description Terraform (`main.tf` avec Youssef) pour provisionner un serveur cloud AWS EC2 et ses règles de pare-feu (ouverts sur les ports 22, 80 et 443).
+  - Écriture d'un playbook Ansible complet qui installe les prérequis (Docker, Nginx, Certbot) et déploie le conteneur de notre application.
+  - Sécurisation du site : mise en place d'un nom de domaine gratuit via DuckDNS et génération automatisée d'un certificat SSL (HTTPS) avec Let's Encrypt dans Ansible.
+  - Séparation de l'infrastructure et du code applicatif via un nouveau dépôt GitHub dédié, protégé par un `.gitignore` strict pour nos fichiers d'état et clés privées.
+
+- **Preuves (captures, journaux, liens des commits et de la démonstration) :**
+  - Fichiers Terraform et Ansible versionnés : [https://github.com/abdellah-get/fsm-infrastructure](https://github.com/abdellah-get/fsm-infrastructure)
+  - Lien du site déployé en HTTPS : [https://fsm-app-morocco.duckdns.org/login](https://fsm-app-morocco.duckdns.org/login)
+  - Journaux quotidiens des 17 et 19 juillet.
+  - La vidéo de démonstration montrant la destruction puis recréation(faite par Youssef): https://drive.google.com/file/d/1TQOTYc6DG36CWLJjw79BBdiDIAySrnZ-/view?usp=sharing
+
+- **Critères validés :**
+  - **L'infrastructure se crée et se détruit par commande :** Utilisation validée de `terraform apply` et `terraform destroy`.
+  - **Le playbook se rejoue sans rien casser (Idempotence) :** Le code Ansible peut être relancé plusieurs fois de suite ; il met à jour DuckDNS et gère Nginx sans créer de doublons ou de crashs.
+  - **Tout est versionné, sans secret en clair :** Les identifiants de base de données et de l'authentification sont passés de manière sécurisée en ligne de commande lors de l'exécution d'Ansible.
+
+- **Difficultés rencontrées et solutions :**
+  - _Éviter les secrets en clair :_ Il a fallu s'assurer que les variables de la base de données et de NextAuth ne soient pas écrites "en dur" dans le code, en les passant en tant qu'arguments externes à Ansible (`-e "db_url='...'"`).
+  - _Gérer l'état de Terraform :_ Compréhension du fonctionnement strict d'AWS : la modification de la description d'un Security Group actif bloquait Terraform dans une boucle. Résolu en gérant la destruction/recréation proprement.
+  - _Reproductibilité sur mobile :_ L'accès web sur mobile forçait le HTTPS. Résolu de manière permanente via l'intégration d'un reverse proxy et de Certbot directement dans notre infrastructure as code.
+
+- **Questions en attente :**
+  - Configuration des accès IAM pour Youssef : je dois m'assurer que les droits que je vais lui créer sont suffisants pour Terraform, afin d'éviter des erreurs "Access Denied" de son côté.
+
+- **Temps passé et prochaines étapes :**
+  - **Temps passé :** Environ 15 à 16 heures au total (12h le 17 juillet sur le provisionnement cloud AWS et Ansible, et 3 à 4h le 19 juillet pour l'idempotence, le HTTPS et DuckDNS).
+  - **Prochaines étapes :** commnecer le travail sur le jalon suivant pour Faire tourner l'application sur Kubernetes
+
 ## Le 19 juillet
 
-- **Lien du site déployé :** [https://fsm-app-morocco.duckdns.org/login](https://fsm-app-morocco.duckdns.org/login)
+- **Lien du site déployé :** [https://fsm-app-morocco.duckdns.org/login]
 
 - **Ce que j'ai fait :**
   - Mise en place d'une solution de nom de domaine gratuit via DuckDNS (`fsm-app-morocco.duckdns.org`) pour contourner le problème des IPs dynamiques d'AWS sans générer de coûts.
@@ -25,14 +60,13 @@
 
 **Ce que j'ai fait :**
 On a enfin mis en commun notre travail ! Mon binôme Youssef a géré la rédaction du fichier `main.tf` pour l'infrastructure, et je me suis occupé de tout le reste (le playbook Ansible, la gestion des variables, et le déploiement). Hier, nous n'avions pas écrit de code car nous avons pris une décision importante : on voulait toucher à un vrai serveur AWS dans les conditions du réel, plutôt que de se contenter d'une simple image Docker en local. On a donc passé notre temps d'hier à configurer le cloud. Aujourd'hui, j'ai tout relié et testé : l'application est en ligne ! J'ai aussi réglé un petit souci d'accès sur mobile (Chrome qui forçait le HTTPS) et j'ai nettoyé notre projet en créant un nouveau dépôt GitHub dédié pour bien séparer l'infrastructure de l'application.
-🔗 **Le lien de notre nouveau dépôt :** [https://github.com/abdellah-get/fsm-infrastructure](https://github.com/abdellah-get/fsm-infrastructure) (j'y ai configuré un `.gitignore` strict pour protéger nos clés et mots de passe).
+🔗 **Le lien de notre nouveau dépôt :** [https://github.com/abdellah-get/fsm-infrastructure](j'y ai configuré un `.gitignore` strict pour protéger nos clés et mots de passe).
 
 **Ce qui me bloque :**
 Le code fonctionne parfaitement, mais il reste quelques petits points d'attention et de friction : 1. **La configuration des accès pour Youssef :** Je dois m'assurer que les droits IAM que je vais lui créer sont suffisants pour Terraform, sinon il risque d'avoir des erreurs "Access Denied" de son côté en essayant de reprendre le projet. 2. **Le HTTPS pour la suite :** Le bug d'accès sur mobile m'a fait réaliser qu'utiliser une simple adresse IP en HTTP ne sera pas viable sur le long terme. Ce n'est pas un blocage pour ce jalon, mais je sais qu'il faudra qu'on trouve comment lier un nom de domaine et configurer un certificat SSL (HTTPS) pour la suite.
 
 **Ce que je vais faire ensuite :**
 Enregistrer la vidéo de démonstration exigée pour le livrable (détruire l'infrastructure avec `terraform destroy` puis la recréer avec `terraform apply`), et transmettre les accès IAM de manière sécurisée à Youssef via un lien éphémère puis finaliser le jalon.
-
 **Temps passé :** 12 heures
 
 **Bilan du jalon 5 :** Déployer automatiquement  
