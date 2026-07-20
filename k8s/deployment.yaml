@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: fsm-app-deployment
 spec:
-  replicas: 1
+  replicas: 4
   selector:
     matchLabels:
       app: fsm-app
@@ -14,17 +14,21 @@ spec:
     spec:
       containers:
         - name: nextjs-container
-          image: fsm-docker-main-web:latest # Utilise le même nom que l'image importée
-          imagePullPolicy: Never # Empêche k8s de chercher l'image sur internet
+          # 1. On utilise ta vraie image GitHub :
+          image: ghcr.io/abdellah-get/fsm-docker:main
+          # 2. On autorise K8s à la télécharger depuis internet :
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           env:
-            - name: DATABASE_URL # Le nom de la variable attendue par ton app
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: fsm-secrets # Le nom de ton objet Secret
-                  key: db_url # La clé précise dans ce Secret
-            - name: NEXTAUTH_SECRET # Le nom de la variable attendue par ton app
+                  name: fsm-secrets
+                  key: db_url
+            - name: NEXTAUTH_SECRET
               valueFrom:
                 secretKeyRef:
                   name: fsm-secrets
