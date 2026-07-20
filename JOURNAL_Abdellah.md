@@ -1,5 +1,24 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+# Point Quotidien
+
+**Le 20 juillet**
+
+• **Ce que j'ai fait :**
+Aujourd'hui, j'ai repris l'excellent travail préparatoire de mon binôme Youssef (qui avait bien structuré le `deployment.yaml` et le `secret.example.yaml`). J'ai finalisé le déploiement sur notre cluster local `kind`. J'ai corrigé le lien vers l'image GitHub (GHCR) et configuré le `Service` (réseau interne) et l'`Ingress` (notre point d'entrée). Pour finir, j'ai testé avec succès le passage à l'échelle (scaling) à 3 copies (la capture d'écran est dans la boîte !).
+
+• **Ce qui me bloque :**
+Plus rien maintenant, mais la journée a été riche en petits blocages !
+
+- J'ai d'abord cru que la création du cluster avait planté, car le terminal est resté bloqué longtemps sur "Ensuring node image" sans barre de progression (c'était juste l'image qui était lourde à télécharger).
+- J'ai eu une erreur "address already in use" en essayant de faire un pont réseau sur le port 3000 de mon PC qui était déjà occupé (j'ai contourné le problème en utilisant le port 8080).
+- Et enfin, le fameux "connection refused" : mon app Next.js refusait les connexions externes car elle tournait sur localhost à l'intérieur du conteneur. J'ai résolu ça en forçant la variable d'environnement `HOSTNAME="0.0.0.0"`.
+
+• **Ce que je vais faire ensuite :**
+Créer une nouvelle branche sur Git pour sauvegarder tout ça proprement, pousser le code sur GitHub, et faire la démo au mentor (code + capture d'écran des 3 pods) pour enfin valider ce Jalon 7.
+
+• **Temps passé :** 6h
+
 **Bilan du jalon 6 :** Décrire l'infrastructure par du code
 **Dates :** du 17 juillet au 19 juillet
 
