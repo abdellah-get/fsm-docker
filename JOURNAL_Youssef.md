@@ -1,5 +1,30 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 20 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Création des objets de base Kubernetes (Jalon 7 - Tâche 2) :**
+  - Rédaction d'un manifeste `secret.yaml` utilisant `stringData` pour injecter les variables d'environnement confidentielles (`DATABASE_URL` pour la base de données Neon PostgreSQL et `NEXTAUTH_SECRET`).
+  - Importation directe de l'image Docker de l'application dans le cluster `k3d` afin d'éviter le registre externe et contourner les erreurs d'extraction.
+  - Rédaction et application du fichier `deployment.yaml` configuré avec la politique `imagePullPolicy: Never` et les références aux variables du secret.
+  - Vérification du statut du pod (`1/1 Running`, statut stable à `0` redémarrage) et confirmation dans les logs du démarrage réussi du serveur Next.js.
+  - Exclusion du fichier `secret.yaml` via le `.gitignore` et création d'un fichier modèle anonymisé `secret.example.yaml` pour le suivi de version.
+
+## 2. Difficultés techniques rencontrées
+
+- Pas de problème pour le moment.
+
+## 3. Prochaines étapes
+
+- **Passation à Abdellah (Jalon 7 - Tâche 3) :** Transmettre le travail validé de la Tâche 2 à mon binôme pour qu'il prenne le relais sur la Tâche 3.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures
+
 # Journal de bord – 19 Juillet
 
 ---
