@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fsm-app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fsm-app
+  template:
+    metadata:
+      labels:
+        app: fsm-app
+    spec:
+      containers:
+        - name: nextjs-container
+          image: fsm-docker-main-web:latest # Utilise le même nom que l'image importée
+          imagePullPolicy: Never # Empêche k8s de chercher l'image sur internet
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL # Le nom de la variable attendue par ton app
+              valueFrom:
+                secretKeyRef:
+                  name: fsm-secrets # Le nom de ton objet Secret
+                  key: db_url # La clé précise dans ce Secret
+            - name: NEXTAUTH_SECRET # Le nom de la variable attendue par ton app
+              valueFrom:
+                secretKeyRef:
+                  name: fsm-secrets
+                  key: auth_secret
