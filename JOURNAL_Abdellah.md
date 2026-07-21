@@ -1,6 +1,48 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
-# Point Quotidien
+# Bilan du jalon 7 : Faire tourner l'application sur Kubernetes
+
+**Dates :** du 20 au 21 juillet 2026
+
+### • Objectif rappelé en une phrase :
+
+Déployer l'application conteneurisée sur un cluster Kubernetes local (kind), comprendre et manipuler ses objets de base (Pod, Deployment, Service, Ingress), et assurer sa mise à l'échelle.
+
+### • Ce que j'ai réalisé :
+
+- **Initialisation :** Reprise et finalisation du travail préparatoire de mon binôme Youssef (`deployment.yaml` et `secret.example.yaml`).
+- **Déploiement :** Lancement d'un cluster local avec `kind` et déploiement de l'application en corrigeant le lien vers l'image du registre GitHub (GHCR).
+- **Réseau :** Création d'un `Service` pour la communication interne et d'un `Ingress` (avec NGINX) pour servir de point d'entrée officiel depuis l'extérieur.
+- **Haute disponibilité :** Configuration et test réussi du passage à l'échelle (scaling) à 3 copies (replicas).
+- **Sécurité et Fiabilité (Bonus) :** Ajout de bonnes pratiques DevOps dans le `deployment.yaml` en configurant des limites de ressources (CPU/RAM) et des sondes de santé (Liveness et Readiness probes).
+
+### • Preuves (captures, journaux, liens des commits et de la démonstration) :
+
+- **Code source :** https://github.com/abdellah-get/fsm-docker/pull/68
+- **Capture d'écran :** ![jalon7-kubectl-get-pods](./captures/jalon7-kubectl-get-pods.png)
+- **Démonstration :** ![app-validation](./captures/jalon7-app-validation.png)
+
+### • Critères validés :
+
+- L'application apparaît bien en état de marche quand on liste les pods (Running).
+- Elle répond via l'ingress (après redirection de port).
+- Le passage à trois copies fonctionne et se vérifie visuellement.
+- Les fichiers de configuration YAML sont rangés et versionnés dans le dépôt Git (avec le fichier des vrais secrets protégé par le `.gitignore`).
+
+### • Difficultés rencontrées et solutions :
+
+- **Création du cluster semblant figée :** Le terminal est resté bloqué sur "Ensuring node image" sans barre de progression. _Solution :_ J'ai patienté, il s'agissait simplement du téléchargement de l'image de nœud qui était lourde.
+- **Conflit de port (`address already in use`) :** Impossible de faire un pont réseau sur le port 3000 de mon PC car il était déjà occupé. _Solution :_ J'ai contourné le problème en redirigeant le trafic vers le port libre 8080 (`8080:3000`).
+- **Rejet de connexion (`connection refused`) :** L'application Next.js refusait les connexions externes car elle écoutait uniquement sur localhost dans son conteneur. _Solution :_ J'ai forcé l'écoute sur toutes les interfaces réseau en ajoutant la variable d'environnement `HOSTNAME="0.0.0.0"` dans le `deployment.yaml`.
+
+### • Questions en attente :
+
+- Aucune question bloquante juste une petite remarque: Est-ce que les valeurs que j'ai définies pour les ressources CPU/RAM et les sondes de santé te semblent cohérentes pour une application Next.js standard ?
+
+### • Temps passé et prochaines étapes :
+
+- **Temps passé :** 8h
+- **Prochaines étapes :** Valider ce bilan avec le mentor, fusionner la branche de ce jalon sur `main`, et attaquer les objectifs du Jalon 8.
 
 **Le 20 juillet**
 
