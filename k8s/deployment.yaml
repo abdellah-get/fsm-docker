@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: fsm-app-deployment
 spec:
-  replicas: 4
+  replicas: 3
   selector:
     matchLabels:
       app: fsm-app
@@ -14,9 +14,7 @@ spec:
     spec:
       containers:
         - name: nextjs-container
-          # 1. On utilise ta vraie image GitHub :
           image: ghcr.io/abdellah-get/fsm-docker:main
-          # 2. On autorise K8s à la télécharger depuis internet :
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -33,3 +31,28 @@ spec:
                 secretKeyRef:
                   name: fsm-secrets
                   key: auth_secret
+
+          # 🛡️ 1. Limites de ressources
+          resources:
+            requests:
+              cpu: "100m" # Demande un minimum de 10% d'un coeur CPU
+              memory: "128Mi" # Demande 128 Mo de RAM
+            limits:
+              cpu: "250m" # Ne doit jamais dépasser 25% d'un coeur CPU
+              memory: "256Mi" # Ne doit jamais dépasser 256 Mo de RAM
+
+          # 🩺 2. Sonde de vivacité (L'application a-t-elle planté ?)
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15 # On attend 15s au démarrage avant de vérifier
+            periodSeconds: 20 # On vérifie toutes les 20s
+
+          # 🚦 3. Sonde de préparation (L'application est-elle prête à recevoir du trafic ?)
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
