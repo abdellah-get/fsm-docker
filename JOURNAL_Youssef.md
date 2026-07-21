@@ -1,5 +1,56 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# BILAN DU JALON 7 – DÉPLOIEMENT & ORCHESTRATION KUBERNETES (k3d)
+
+---
+
+Dates : du 19 au 20 juillet 2026
+
+## 1. Réalisations
+
+### A. Initialisation et Préparation de l'Environnement (19 Juillet)
+
+- **Architecture allégée :** Installation et configuration de `k3d` et `kubectl` directement dans l'environnement WSL Ubuntu afin de contourner l'empreinte mémoire d'une machine virtuelle classique.
+- **Provisionnement du cluster :** Création et initialisation d'un cluster local à nœud unique (`mon-cluster`) vérifié comme opérationnel (statut `Ready`).
+- **Résolution des droits :** Configuration de l'intégration WSL de Docker Desktop et gestion des privilèges de socket Docker.
+
+### B. Objets de base, Déploiement et Sécurisation (20 Juillet)
+
+- **Gestion sécurisée des secrets :**
+  - Rédaction du manifeste `secret.yaml` via la directive `stringData` pour injecter dynamiquement les variables sensibles (`db_url` pour la base PostgreSQL Neon et `auth_secret`).
+  - Protection des identifiants par exclusion du secret réel dans le fichier `.gitignore` et création d'un modèle d'exemple anonymisé (`k8s/secret.example.yaml`).
+- **Importation d'image locale & Déploiement :**
+  - Importation directe de l'image Docker locale dans le cluster via `k3d image import` pour éliminer le besoin d'un registre distant.
+  - Rédaction et exécution du fichier `deployment.yaml` avec la politique `imagePullPolicy: Never` pour forcer l'utilisation de l'image locale importée.
+- **Validation et Stabilité :**
+  - Vérification du cycle de vie du pod avec le statut `1/1 Running` et absence totale de crash (`RESTARTS: 0`).
+  - Validation du serveur Next.js fonctionnel et connecté à la base de données via les journaux d'exécution (`kubectl logs`).
+
+---
+
+## 3. Difficultés techniques rencontrées et résolues
+
+- **Erreur d'accès au socket Docker sous WSL (`Permission Denied`) :**
+  - _Problème :_ Échec de création du cluster `k3d` lié aux droits d'accès sur `/var/run/docker.sock`.
+  - _Résolution :_ Activation de l'intégration WSL dans Docker Desktop et ajout de l'utilisateur local au groupe Linux `docker` (`usermod -aG docker`).
+
+- **Isolation des images locales dans k3d (`ErrImagePull`) :**
+  - _Problème :_ Kubernetes tentait de télécharger l'image depuis Docker Hub car les conteneurs `k3d` ne voient pas automatiquement le registre d'images local WSL.
+  - _Résolution :_ Chargement explicite de l'image locale dans le cluster avec `k3d image import` et définition de `imagePullPolicy: Never` dans le manifeste de déploiement.
+
+---
+
+## 4. Preuves et Livrables
+
+- **Dépôt Git du projet :** [Lien vers le dépôt GitHub](https://github.com/abdellah-get/fsm-docker.git)
+- **Pull Request associées :** [Lien vers le Pull Request](https://github.com/abdellah-get/fsm-docker/pull/64)
+
+---
+
+## 5. Temps investi
+
+- **Total cumulé du Jalon 7 :** 6 heures
+
 # Journal de bord – 20 Juillet
 
 ---
