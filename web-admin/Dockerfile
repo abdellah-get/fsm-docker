@@ -29,8 +29,8 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# CORRECTIF SÉCURITÉ : Mise à jour de npm et tar dans l'image finale scannée par Trivy
-RUN npm install -g npm@latest tar@7.5.19
+# CORRECTIF SÉCURITÉ : Utilisation de npm@10 (compatible avec Node 20) pour écraser tar
+RUN npm install -g npm@10 tar@7.5.19
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
