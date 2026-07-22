@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package*.json ./
-# CORRECTIF BUILD : Ajout de --legacy-peer-deps pour gérer les conflits du projet
+# Utilisation de npm ci avec prise en charge des conflits
 RUN npm ci --legacy-peer-deps
 
 # ==========================================
@@ -29,8 +29,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# CORRECTIF SÉCURITÉ : Utilisation de npm@10 (compatible Node 20) pour écraser tar
-RUN npm install -g npm@10 tar@7.5.19
+# CORRECTIF SÉCURITÉ ULTIME : npm n'est pas nécessaire pour exécuter l'application standalone.
+# On le supprime complètement pour éliminer toutes ses sous-dépendances vulnérables (dont tar).
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -50,5 +51,5 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 
-# La commande finale pour démarrer l'app en production
+# La commande finale pour démarrer l'app en production avec Node pur
 CMD ["node", "server.js"]
