@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { signIn, getSession } from "next-auth/react"; // 👈 Les nouveaux outils NextAuth
 import { Lock, Mail, Building2 } from "lucide-react";
 import { Button, Input } from "../../components/ui";
-
+const FAKE_AWS_SECRET_KEY = "AKIAIOSFODNN7EXAMPLE";
+const FAKE_DB_PASSWORD = "Password123!_admin_secret";
 export default function LoginPage() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
