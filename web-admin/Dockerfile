@@ -6,8 +6,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package*.json ./
-# On utilise 'npm ci' qui est plus rapide et strict que 'npm install' en production
-RUN npm install
+# Utilisation de npm ci avec prise en charge des conflits
+RUN npm ci --legacy-peer-deps
 
 # ==========================================
 # ÉTAPE 2 : Construction (Build)
@@ -29,6 +29,10 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# CORRECTIF SÉCURITÉ ULTIME : npm n'est pas nécessaire pour exécuter l'application standalone.
+# On le supprime complètement pour éliminer toutes ses sous-dépendances vulnérables (dont tar).
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -47,5 +51,5 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 
-# La commande finale pour démarrer l'app en production
+# La commande finale pour démarrer l'app en production avec Node pur
 CMD ["node", "server.js"]

@@ -1,5 +1,42 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 22 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Résolution des échecs du pipeline CI/CD GitHub (Intervention hors Jalon 8) :**
+  - _Contexte initial :_ Ce travail de débogage ne fait pas partie du Jalon 8. L'intervention a été rendue obligatoire après avoir constaté qu'un test du pipeline GitHub Actions échouait systématiquement, et ce, alors que la seule modification apportée au dépôt était la mise à jour du journal de bord.
+  - _Diagnostic :_ Identification de la cause de l'échec lors du job "Analyse de vulnérabilités (Trivy)". Le scanner bloquait le déploiement à cause d'une vulnérabilité critique (CVE-2026-59873) liée à la version de `tar` embarquée globalement dans l'image de base Node.js.
+  - _Stabilisation du Build Docker :_ Remplacement de la commande d'installation par `npm ci --legacy-peer-deps` dans le `Dockerfile` pour figer l'arbre des dépendances et contourner les crashs de compilation.
+  - _Gestion des conflits de version système :_ Résolution de l'erreur fatale `EBADENGINE` en alignant strictement les versions de l'environnement (`npm@10` pour `node:20-alpine`).
+  - _Sécurisation de l'image finale :_ Application d'une stratégie radicale d'optimisation en supprimant totalement `npm` (`rm -rf /usr/local/lib/node_modules/npm...`) de l'étape de production (`runner`). L'application Next.js "standalone" n'en ayant pas besoin, cela a permis d'éradiquer définitivement les sous-dépendances vulnérables.
+  - _Validation :_ Succès complet du pipeline. Les 4 vérifications (Scan des secrets, Analyse Trivy, Construction Docker, et Tests) sont passées au vert sans conflit.
+
+## 2. Difficultés techniques rencontrées
+
+- L'erreur de vulnérabilité était trompeuse : elle ne provenait pas directement des dépendances du projet (`package.json`), mais de l'outil `npm` global installé nativement dans l'image Docker Alpine.
+- La résolution a nécessité un dépannage en cascade : la mise à jour des paquets a d'abord causé des conflits locaux (`EOVERRIDE`), puis la modification du conteneur a provoqué des ruptures de compatibilité (`EBADENGINE`) et des blocages de sécurité (`npm ci`), exigeant une approche itérative minutieuse.
+
+## 3. Prochaines étapes
+
+- **Démarrage du Jalon 8 :** Entamer le développement et les tâches associées au Jalon 8, maintenant que l'infrastructure CI/CD est parfaitement saine, automatisée et sécurisée.
+
+## 4. Temps investi
+
+- **Durée totale :** 5 heures
+
+# Journal de bord – 21 Juillet
+
+## Réalisations
+
+Je n'ai pas codé aujourd'hui
+
+## Motif
+
+Empêchement familial imprévu
+
 # BILAN DU JALON 7 – DÉPLOIEMENT & ORCHESTRATION KUBERNETES (k3d)
 
 ---
