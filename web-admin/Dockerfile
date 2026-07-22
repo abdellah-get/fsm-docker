@@ -6,8 +6,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package*.json ./
-# On utilise 'npm ci' qui est plus rapide et strict que 'npm install' en production
-RUN npm ci
+# CORRECTIF BUILD : Ajout de --legacy-peer-deps pour gérer les conflits du projet
+RUN npm ci --legacy-peer-deps
 
 # ==========================================
 # ÉTAPE 2 : Construction (Build)
@@ -29,7 +29,7 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# CORRECTIF SÉCURITÉ : Utilisation de npm@10 (compatible avec Node 20) pour écraser tar
+# CORRECTIF SÉCURITÉ : Utilisation de npm@10 (compatible Node 20) pour écraser tar
 RUN npm install -g npm@10 tar@7.5.19
 
 ENV NODE_ENV=production
