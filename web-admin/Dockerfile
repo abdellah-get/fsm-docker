@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package*.json ./
 # On utilise 'npm ci' qui est plus rapide et strict que 'npm install' en production
-RUN npm install
+RUN npm ci
 
 # ==========================================
 # ÉTAPE 2 : Construction (Build)
@@ -28,6 +28,9 @@ RUN npm run build
 # ==========================================
 FROM node:20-alpine AS runner
 WORKDIR /app
+
+# CORRECTIF SÉCURITÉ : Mise à jour de npm et tar dans l'image finale scannée par Trivy
+RUN npm install -g npm@latest tar@7.5.19
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
