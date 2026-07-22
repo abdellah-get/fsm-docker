@@ -1,10 +1,12 @@
 {
   "dependencies": {
-    "pg": "^8.22.0",
-    "tar": "^7.5.19"
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@types/pg": "^8.20.0",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "tar": "7.5.19"
   }
 }
