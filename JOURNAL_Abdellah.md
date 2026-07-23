@@ -1,5 +1,12 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+## Le 23 Juillet
+
+• **Ce que j'ai fait :** J'ai pris en charge les tâches 1 et 2 du Jalon 8. J'ai initialisé notre chart Helm (`fsm-app`), migré nos anciens manifestes Kubernetes vers le dossier `templates/` et tout paramétré via un fichier `values.yaml` bien commenté. Le déploiement est maintenant totalement dynamique (replicas, image, ressources...). J'ai validé le rendu avec un `helm template` et j'ai poussé le tout sur GitHub.
+• **Ce qui me bloque :** Plus rien actuellement. J'ai eu un petit blocage à cause du formateur automatique de VS Code qui ajoutait des espaces invisibles dans ma syntaxe Helm (`{ {` au lieu de `{{`), ce qui faisait planter le YAML, mais j'ai pu forcer la correction et résoudre le problème !
+• **Ce que je vais faire ensuite :** Passer le relais à mon binôme. J'attends que Youssef récupère ma branche pour qu'il effectue les tâches 3 et 4 (déploiement sur son cluster local et tests de rollback). Je reste en support s'il a besoin.
+• **Temps passé :** Environ 3h30 - 4h
+
 # Bilan du jalon 7 : Faire tourner l'application sur Kubernetes
 
 **Dates :** du 20 au 21 juillet 2026

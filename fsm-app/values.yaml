@@ -1,0 +1,28 @@
+# ==========================================
+# Fichier de valeurs (Variables) pour fsm-app
+# ==========================================
+
+# Nombre de copies de l'application à déployer simultanément
+replicaCount: 3
+
+# Configuration de l'image Docker
+image:
+  # Le dépôt où se trouve l'image
+  repository: ghcr.io/abdellah-get/fsm-docker
+  # Le tag (version) de l'image à utiliser
+  tag: "main"
+  # Politique de téléchargement (Always, IfNotPresent)
+  pullPolicy: Always
+
+# Configuration du port de l'application
+service:
+  port: 3000
+
+# Allocation des ressources (CPU et RAM) pour chaque pod
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
