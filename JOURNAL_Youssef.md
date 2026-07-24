@@ -1,5 +1,34 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 23 Juillet
+
+---
+
+## 1. Réalisations
+
+- **Industrialisation du déploiement avec Helm (Jalon 8) :**
+  - _Synchronisation d'équipe :_ Récupération et intégration du travail accompli par mon binôme Abdellah sur le dépôt distant.
+  - _Déploiement initial :_ Déploiement du chart Helm de l'application Next.js (image standalone) sur le cluster local k3d via l'environnement WSL.
+  - _Tests de mise à jour à chaud (Upgrade - Clôture Issue #75) :_ Validation de la flexibilité de Helm en forçant le déploiement de 3 réplicas à la volée via la commande `helm upgrade`, sans interruption de service.
+  - _Tests de retour arrière (Rollback - Clôture Issue #76) :_ Validation de la résilience du système en effectuant un retour réussi vers la révision stable précédente (1 réplica) via la commande `helm rollback`.
+  - _Versionnement :_ Création du commit final de validation des issues (#75, #76) et push vers le dépôt distant pour synchronisation du code avec mon binôme Abdellah.
+
+## 2. Difficultés techniques rencontrées et corrections
+
+- **Erreur de parsing YAML (Template Helm) :** Lors de la sauvegarde du fichier `deployment.yaml`, l'extension de formatage de VS Code séparait automatiquement les accolades des variables Helm (transformant `{{` en `{ {`), ce qui provoquait une erreur fatale d'exécution (`invalid map key`).
+  - _Correction :_ Restauration de la syntaxe correcte des doubles accolades et modification des paramètres de l'IDE pour désactiver le formatage automatique sur ces fichiers.
+- **Échecs de démarrage en boucle (`CrashLoopBackOff`) :** Les pods plantaient au lancement car la configuration initiale des sondes Kubernetes ciblait une route inexistante, forçant le système à tuer les conteneurs.
+  - _Correction :_ Redirection de la `livenessProbe` et de la `readinessProbe` vers la route valide `/api/health`, ce qui a permis de stabiliser les pods.
+
+## 3. Prochaines étapes
+
+- **Bilan du Jalon 8 :** Préparer, organiser et soumettre les captures d'écran des tests Helm (statuts des pods `Running`, historiques de révisions, preuve des upgrades et rollbacks) pour finaliser le livrable.
+- **Démarrage du Jalon 9 :** Entamer les développements, la planification et les nouvelles tâches associées au Jalon 9.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures
+
 # Journal de bord – 22 Juillet
 
 ---

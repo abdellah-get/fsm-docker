@@ -44,7 +44,7 @@ spec:
           # 🩺 2. Sonde de vivacité
           livenessProbe:
             httpGet:
-              path: /
+              path: /api/health
               port: {{ .Values.service.port }}
             initialDelaySeconds: 15
             periodSeconds: 20
@@ -52,7 +52,7 @@ spec:
           # 🚦 3. Sonde de préparation
           readinessProbe:
             httpGet:
-              path: /
+              path: /api/health
               port: {{ .Values.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 10
