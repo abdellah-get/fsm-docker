@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fsm-app
+  # Argo CD lui-même tourne souvent dans ce namespace, c'est là qu'il lit ses configurations
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # ⚠️ Remplace par l'URL exacte de ton dépôt GitHub si ce n'est pas la bonne
+    repoURL: "https://github.com/abdellah-get/fsm-docker.git"
+    # Le chemin vers ton dossier Helm du Jalon 8
+    path: "fsm-app"
+    # La branche à surveiller
+    targetRevision: main
+  destination:
+    # L'adresse interne du cluster local
+    server: "https://kubernetes.default.svc"
+    # Le namespace cible demandé dans tes critères
+    namespace: jalon9
+  syncPolicy:
+    automated:
+      # Supprime les ressources sur le cluster si elles sont retirées de Git
+      prune: true
+      # Annule automatiquement les modifications manuelles faites sur le cluster
+      selfHeal: true
+    syncOptions:
+      # Crée automatiquement le namespace "jalon9" s'il n'existe pas encore
+      - CreateNamespace=true
