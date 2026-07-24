@@ -72,7 +72,7 @@ Aucune question pour le moment. Le paquet Helm est 100 % opérationnel, validé 
 
 • **Temps passé :** Environ 3h30 - 4h
 
-## Le 23 Juillet
+## Le 22 Juillet
 
 N.B: j'ai pas travaillé ce jour là à cause d'une maladie
 
