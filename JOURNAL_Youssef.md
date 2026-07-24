@@ -1,5 +1,51 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# BILAN DU JALON 8 – INDUSTRIALISATION DU DÉPLOIEMENT AVEC HELM
+
+---
+
+Dates : du 22 au 23 juillet 2026
+
+## 1. Réalisations
+
+- **Synchronisation d'équipe :** Récupération et intégration sur l'environnement local du travail préparatoire effectué par mon binôme Abdellah.
+- **Déploiement initial Helm :** Installation et configuration réussies du chart Helm pour l'application dans le namespace `jalon8` du cluster local k3d.
+- **Tests de mise à jour à chaud (Upgrade) :**
+  - Validation de la flexibilité de Helm via la commande `helm upgrade` (Issue #75).
+  - Modification de la configuration à la volée pour passer dynamiquement à 3 réplicas (pods) sans interruption de service.
+- **Tests de résilience et retour arrière (Rollback) :**
+  - Validation du mécanisme de sécurité de Helm via la commande `helm rollback` (Issue #76).
+  - Restauration réussie de la révision stable précédente, ramenant automatiquement l'application à sa configuration d'origine.
+
+---
+
+## 2. Difficultés techniques rencontrées et résolues
+
+- **Corruption de la syntaxe des templates Helm (Erreur de parsing YAML) :**
+  - _Problème :_ Lors de la sauvegarde du fichier `deployment.yaml`, l'auto-formateur de VS Code séparait systématiquement les doubles accolades des variables Helm (transformant `{{` en `{ {`), provoquant des erreurs fatales d'exécution type `invalid map key`.
+  - _Résolution :_ Restauration manuelle de la syntaxe Go-Template et modification du fichier `settings.json` de VS Code pour désactiver la fonction `formatOnSave` sur les fichiers YAML.
+
+- **Échecs de démarrage des conteneurs (`CrashLoopBackOff`) :**
+  - _Problème :_ Les pods fraîchement déployés plantaient en boucle. Le diagnostic a révélé que les sondes Kubernetes pointaient vers une route HTTP inexistante (404).
+  - _Résolution :_ Mise à jour de la `livenessProbe` et de la `readinessProbe` dans le manifeste `deployment.yaml` pour cibler correctement la route fonctionnelle `/api/health`.
+
+---
+
+## 3. Preuves et Livrables
+
+- **Dépôt Git du projet :** [Lien vers le dépôt GitHub](https://github.com/abdellah-get/fsm-docker.git)
+- **Validation des Issues #75 et #76 :**[ lien vers le Pull Request #78 ](https://github.com/abdellah-get/fsm-docker/pull/78)
+
+- **Captures d'écran de validation :**
+  ![Preuve du cycle de vie Helm (Upgrade & Rollback)](captures/preuve-helm.jfif)
+  _(Note : Cette capture valide l'ensemble du cycle de vie, incluant le passage à 3 pods via l'upgrade, ainsi que le retour arrière réussi attesté par l'historique Helm final)._
+
+---
+
+## 4. Temps investi
+
+- **Total cumulé du Jalon 8 :** 4 heures
+
 # Journal de bord – 23 Juillet
 
 ---
@@ -22,7 +68,6 @@
 
 ## 3. Prochaines étapes
 
-- **Bilan du Jalon 8 :** Préparer, organiser et soumettre les captures d'écran des tests Helm (statuts des pods `Running`, historiques de révisions, preuve des upgrades et rollbacks) pour finaliser le livrable.
 - **Démarrage du Jalon 9 :** Entamer les développements, la planification et les nouvelles tâches associées au Jalon 9.
 
 ## 4. Temps investi
