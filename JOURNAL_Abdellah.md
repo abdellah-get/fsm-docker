@@ -1,5 +1,27 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+## Le 24 Juillet
+
+• **Ce que j'ai fait :**
+J'ai préparé notre dépôt pour le déploiement déclaratif avec GitOps (Jalon 9) :
+
+- **Architecture :** Création du dossier dédié `argocd-apps` à la racine du projet.
+- **Liaison Git/Cluster :** Rédaction du manifeste `app-fsm.yaml` qui indique à Argo CD où trouver notre chart Helm et comment le déployer (vers le namespace `jalon9`).
+- **Automatisation :** Activation des règles `selfHeal` (auto-correction) et `prune` (nettoyage automatique) dans le manifeste.
+- **Livraison :** Fichiers commités et poussés sur notre dépôt GitHub.
+
+• **Ce qui me bloque :**
+
+- Absolument rien. La partie déclarative est en ligne et prête à être lue par le cluster.
+
+• **Ce que je vais faire ensuite :**
+
+- Appliquer ce manifeste sur le cluster Kubernetes pour observer Argo CD prendre le relais et tester la synchronisation automatique en direct.
+
+• **Temps passé :**
+
+- Environ 2h
+
 # Bilan du jalon 8 : Industrialiser avec Helm
 
 **Dates :** Du 23 au 24 juillet
