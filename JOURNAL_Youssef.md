@@ -1,5 +1,32 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 24 Juillet
+
+---
+
+## 1. Réalisations
+
+- Réalisation du bilan du Jalon 8.
+- _Planification :_ Création et organisation des tâches du Jalon 9 sur le tableau de suivi du projet.
+- _Installation (Tâche 1) :_ Création de l'espace de noms `argocd` et déploiement de l'outil sur le cluster local.
+- _Validation :_ Récupération du mot de passe administrateur chiffré, établissement d'un tunnel réseau (port-forward) et connexion réussie à l'interface Web locale d'Argo CD.
+- _Documentation :_ Rédaction et ajout du fichier `install-argocd.md` détaillant la procédure d'installation reproductible pour assurer l'alignement technique avec mon binôme.
+
+## 2. Difficultés techniques rencontrées et corrections
+
+- **Échec de l'application du manifeste Argo CD (`Too long`) :** Le déploiement initial renvoyait une erreur signalant que les annotations dépassaient la limite de taille autorisée par Kubernetes (262144 bytes).
+  - _Correction :_ Contournement de la limitation côté client en forçant l'application de la configuration directement sur le serveur via l'ajout du paramètre `--server-side` à la commande `kubectl apply`.
+- **Blocage prolongé des pods (`ContainerCreating`) :** Lors du démarrage d'Argo CD sous l'environnement WSL, l'initialisation des pods a stagné pendant près de 20 minutes sans afficher d'erreur explicite.
+  - _Correction :_ L'inspection détaillée des événements via la commande `kubectl describe pod` a permis de diagnostiquer qu'il ne s'agissait pas d'un crash, mais d'une latence importante lors du téléchargement des images lourdes. La solution a consisté à patienter jusqu'à la finalisation du "pull" des images (statut `Running`).
+
+## 3. Prochaines étapes
+
+- **Avancement du Jalon 9 :** Entamer les prochaines tâches du Jalon 9.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures
+
 # BILAN DU JALON 8 – INDUSTRIALISATION DU DÉPLOIEMENT AVEC HELM
 
 ---
