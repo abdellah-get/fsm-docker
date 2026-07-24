@@ -1,11 +1,58 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+# Bilan du jalon 8 : Industrialiser avec Helm
+
+**Dates :** Du 23 au 24 juillet
+
+• **Objectif rappelé en une phrase :**
+Transformer nos manifestes Kubernetes statiques du Jalon 7 en un paquet Helm (`fsm-app`) réutilisable, dynamique et facilement administrable pour automatiser les déploiements, mises à jour et retours en arrière.
+
+• **Ce que j'ai réalisé :**
+
+- **Création & Paramétrage du Chart (Partie Abdellah) :** Initialisation de la structure du paquet Helm (`fsm-app`), migration des fichiers de configuration (`deployment.yaml`, `service.yaml`, `ingress.yaml`, `secret.yaml`) dans le dossier `templates/` et extraction de l'ensemble des variables (réplicas, image, limites de ressources CPU/RAM, ports) dans un fichier `values.yaml` clair et commenté.
+- **Validation & Déploiement Local (Partie Youssef) :** Récupération de la branche distante, déploiement initial du paquet Helm sur un cluster local `k3d` sous WSL.
+- **Mise à jour à chaud (Clôture Issue #75) :** Exécution d'un `helm upgrade` pour faire passer l'application de 1 à 3 réplicas à la volée, sans interruption de service.
+- **Retour arrière / Rollback (Clôture Issue #76) :** Test de résilience en effectuant un `helm rollback` vers la révision stable précédente (retour à 1 réplica).
+
+• **Preuves (captures, journaux, liens des commits et de la démonstration) :**
+
+- **Commits & Branche :** Modifications poussées sur la branche `feature/jalon-8-helm` https://github.com/abdellah-get/fsm-docker/pull/77
+- **Validation du rendu :** Exécution réussie de `helm template test-local ./fsm-app` (génération propre du YAML avant application). ![jalon8-helm-template-test-local](./captures/jalon8-helm-template-test-local.png)
+
+• **Critères validés :**
+
+- [x] Le paquet installe correctement l'application sur le cluster local.
+- [x] Le fichier `values.yaml` est entièrement paramétré, clair et commenté.
+- [x] Une mise à jour dynamique (`helm upgrade`) et un retour arrière (`helm rollback`) ont été exécutés et démontrés avec succès.
+
+• **Difficultés rencontrées et solutions :**
+
+1. **Erreur de parsing YAML (`invalid map key`) :** Le formateur automatique de VS Code rajoutait des espaces indésirables dans les variables Helm (`{ {` au lieu de `{{`), ce qui bloquait le rendu du template.
+   - _Solution :_ Correction de la syntaxe, suppression des espaces via script/commandes PowerShell et ajustement des règles de formatage dans l'IDE.
+2. **Crash des conteneurs (`CrashLoopBackOff`) :** Les pods plantaient au lancement car les sondes `livenessProbe` et `readinessProbe` ciblaient une route initiale non valide.
+   - _Solution :_ Modification de la configuration des sondes pour cibler la route de santé effective `/api/health`, ce qui a immédiatement stabilisé l'application.
+
+• **Questions en attente :**
+Aucune question pour le moment. Le paquet Helm est 100 % opérationnel, validé localement et prêt à être réutilisé pour les futurs environnements.
+
+• **Temps passé et prochaines étapes :**
+
+- **Temps passé cumulé :** ~6h30 - 7h au total pour l'équipe (Abdellah ~3h30-4h + Youssef ~3h).
+- **Prochaines étapes :** Finaliser et soumettre la démonstration du Jalon 8, puis enchaîner avec les tâches de planification et de développement du Jalon 9.
+
 ## Le 23 Juillet
 
 • **Ce que j'ai fait :** J'ai pris en charge les tâches 1 et 2 du Jalon 8. J'ai initialisé notre chart Helm (`fsm-app`), migré nos anciens manifestes Kubernetes vers le dossier `templates/` et tout paramétré via un fichier `values.yaml` bien commenté. Le déploiement est maintenant totalement dynamique (replicas, image, ressources...). J'ai validé le rendu avec un `helm template` et j'ai poussé le tout sur GitHub.
+
 • **Ce qui me bloque :** Plus rien actuellement. J'ai eu un petit blocage à cause du formateur automatique de VS Code qui ajoutait des espaces invisibles dans ma syntaxe Helm (`{ {` au lieu de `{{`), ce qui faisait planter le YAML, mais j'ai pu forcer la correction et résoudre le problème !
+
 • **Ce que je vais faire ensuite :** Passer le relais à mon binôme. J'attends que Youssef récupère ma branche pour qu'il effectue les tâches 3 et 4 (déploiement sur son cluster local et tests de rollback). Je reste en support s'il a besoin.
+
 • **Temps passé :** Environ 3h30 - 4h
+
+## Le 23 Juillet
+
+N.B: j'ai pas travaillé ce jour là à cause d'une maladie
 
 # Bilan du jalon 7 : Faire tourner l'application sur Kubernetes
 
