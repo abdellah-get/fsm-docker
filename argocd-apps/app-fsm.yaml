@@ -12,7 +12,7 @@ spec:
     # Le chemin vers ton dossier Helm du Jalon 8
     path: "fsm-app"
     # La branche à surveiller
-    targetRevision: main
+    targetRevision: main 
   destination:
     # L'adresse interne du cluster local
     server: "https://kubernetes.default.svc"
