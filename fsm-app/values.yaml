@@ -3,7 +3,7 @@
 # ==========================================
 
 # Nombre de copies de l'application à déployer simultanément
-replicaCount: 3
+replicaCount: 1
 
 # Configuration de l'image Docker
 image:
