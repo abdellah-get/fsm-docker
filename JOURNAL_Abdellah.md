@@ -1,5 +1,28 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+## Le 25 juillet 2026
+
+**• Ce que j'ai fait :**
+Aujourd'hui, l'objectif principal était de concrétiser notre approche GitOps avec Argo CD. Voici les étapes détaillées :
+
+- **Finalisation d'Argo CD :** J'ai vérifié que tous les pods de l'infrastructure Argo CD étaient bien passés en `Running`, puis j'ai extrait le mot de passe administrateur et configuré un tunnel (`port-forward`) pour accéder à l'interface web locale.
+- **Déploiement automatisé :** J'ai appliqué le manifeste `app-fsm.yaml`. L'interface d'Argo CD a pris le relais pour lire notre dépôt GitHub et commencer à synchroniser l'état désiré vers le cluster.
+- **Débogage réseau (Troubleshooting) :** Pendant le déploiement, j'ai fait face à un statut `Sync failed` dans Argo CD. En explorant l'arbre des ressources, j'ai isolé le problème sur le composant Ingress. Le journal d'erreur indiquait un conflit de routage (`host "_" and path "/" already defined`). J'ai débloqué la situation en identifiant et en supprimant un ancien Ingress fantôme qui traînait dans le namespace `default`.
+- **Validation du Self-Healing :** Pour prouver l'auto-réparation de l'infrastructure, j'ai procédé à un test de sabotage. J'ai volontairement supprimé un pod d'application sain. En quelques secondes, le ReplicaSet a détecté l'anomalie et recréé un pod flambant neuf, confirmant que le cluster est désormais résilient aux pannes.
+
+**• Ce qui me bloque :**
+L'avancement du projet n'est pas bloqué, mais je rencontre une instabilité au niveau des pods applicatifs qui nécessitera une investigation poussée :
+Plusieurs pods de notre application Next.js tombent aléatoirement en statut `CrashLoopBackOff`. J'ai tenté de les supprimer pour forcer un redémarrage, mais l'erreur revient. J'ai analysé les logs internes de ces pods (`kubectl logs`), mais l'application semble démarrer correctement (le seul message est un avertissement SSL lié à PostgreSQL).
+_Mes hypothèses actuelles :_ L'application se fait probablement tuer de l'extérieur par Kubernetes. Soit il s'agit d'un manque de mémoire vive (RAM) sur mon environnement WSL qui entraîne un _OOMKilled_, soit l'application est trop lente à démarrer, ce qui provoque l'échec des sondes de santé (Health Probes).
+
+**• Ce que je vais faire ensuite :**
+
+- Dresser le bilan final pour clôturer officiellement ce **Jalon 9**.
+- Enchaîner immédiatement sur le **Jalon 10 (Observabilité et fiabilité)**. Cette prochaine étape tombe à point nommé : le déploiement d'outils de monitoring (comme Prometheus et Grafana) va me donner les métriques exactes de consommation CPU/RAM de mes pods. Ce sera l'outil parfait pour confirmer mon hypothèse et résoudre définitivement ces crashs.
+
+**• Temps passé :**
+Environ 2 heures et demie (incluant le déploiement Argo CD, la résolution du conflit d'Ingress et l'analyse de logs).
+
 ## Le 24 Juillet
 
 • **Ce que j'ai fait :**
