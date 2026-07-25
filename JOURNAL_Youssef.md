@@ -1,5 +1,29 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 25 Juillet
+
+---
+
+## 1. Réalisations
+
+- _Intégration :_ Récupération et intégration du travail de mon binôme Abdellah sur le dépôt du projet.
+- _Déploiement GitOps (Jalon 9) :_ Configuration du manifeste d'application (`app-fsm.yaml`) pour lier le cluster k3d au dépôt GitHub, avec la modification de la `targetRevision` pour pointer vers ma branche de travail (`feat/youssef-jalon9`).
+- _Validation de la synchronisation :_ Modification du `replicaCount` à 4 et observation de la détection de la dérive (Drift) et de la réconciliation automatique par Argo CD (création des pods manquants).
+
+## 2. Difficultés techniques rencontrées et corrections
+
+- **Absence de désynchronisation d'Argo CD après modification du code :** Malgré le push de la nouvelle configuration (passage à 4 réplicas sur la branche `feat/youssef-jalon9`), l'application Argo CD restait au statut "Synced" sans déclencher la mise à jour des pods.
+  - _Correction :_ L'instance Argo CD du cluster surveillait toujours la branche `main` par défaut. Il a fallu forcer la mise à jour de sa configuration en réappliquant le manifeste localement via la commande `kubectl apply -f app-fsm.yaml` afin qu'il prenne en compte la nouvelle branche ciblée.
+
+## 3. Prochaines étapes
+
+- Passer la main à mon binôme Abdellah pour finir les tâches restantes.
+- Préparer le bilan du Jalon 9.
+
+## 4. Temps investi
+
+- **Durée totale :** 2 heures
+
 # Journal de bord – 24 Juillet
 
 ---
