@@ -1,5 +1,58 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# BILAN DU JALON 9 – DÉPLOIEMENT CONTINU AVEC GITOPS ET ARGO CD
+
+---
+
+Dates : du 24 au 25 juillet 2026
+
+## 1. Réalisations
+
+- **Synchronisation d'équipe :** Récupération et intégration sur l'environnement local du travail effectué par mon binôme Abdellah.
+- **Organisation et Planification :** Création et répartition des tâches du Jalon 9 sur le tableau de suivi du projet.
+- **Mise en place de l'infrastructure GitOps (Tâche 1) :**
+  - Création de l'espace de noms `argocd` et déploiement de l'outil Argo CD sur le cluster local k3d.
+  - Récupération du mot de passe administrateur, établissement d'un tunnel réseau (port-forward) et validation de la connexion à l'interface Web locale.
+  - Rédaction et ajout du document `install-argocd.md` détaillant la procédure reproductible pour l'alignement technique.
+- **Configuration du flux GitOps :** Déploiement du manifeste d'application (`app-fsm.yaml`) configuré pour lier le cluster au dépôt GitHub, en pointant spécifiquement la `targetRevision` vers la branche de travail `feat/youssef-jalon9`.
+- **Validation de la synchronisation automatisée :**
+  - Modification de la configuration (`replicaCount` passé à 4) sur la branche.
+  - Observation en direct sur l'interface d'Argo CD de la détection de la dérive (Drift) et de la réconciliation automatique (création des pods manquants).
+
+---
+
+## 2. Difficultés techniques rencontrées et résolues
+
+- **Échec de l'application du manifeste Argo CD (`Too long`) :**
+  - _Problème :_ Lors du déploiement initial d'Argo CD, une erreur signalait que les annotations dépassaient la limite de taille autorisée par Kubernetes (262144 bytes).
+  - _Résolution :_ Contournement de la limitation côté client en forçant l'application directe sur le serveur avec l'ajout du drapeau `--server-side` à la commande `kubectl apply`.
+
+- **Blocage prolongé des pods Argo CD (`ContainerCreating`) :**
+  - _Problème :_ Sous l'environnement WSL, l'initialisation des pods a stagné pendant environ 20 minutes sans erreur explicite.
+  - _Résolution :_ L'inspection via `kubectl describe pod` a permis d'écarter la piste d'un crash et de diagnostiquer une forte latence due au téléchargement (pull) d'images lourdes. La solution a été d'attendre la finalisation de ce processus pour que les statuts passent à `Running`.
+
+- **Absence de désynchronisation d'Argo CD après la modification du code :**
+  - _Problème :_ Malgré le push de la nouvelle configuration (4 réplicas) sur la branche `feat/youssef-jalon9`, l'application Argo CD conservait son statut "Synced" et ignorait la mise à jour.
+  - _Résolution :_ L'instance Argo CD locale surveillait par défaut la branche `main`. La configuration a été corrigée en forçant la mise à jour via la commande `kubectl apply -f app-fsm.yaml`, permettant ainsi à Argo CD de prendre en compte la nouvelle branche ciblée.
+
+---
+
+## 3. Preuves et Livrables
+
+- **Dépôt Git du projet :** [Lien vers le dépôt GitHub](https://github.com/abdellah-get/fsm-docker.git)
+- **Documentation technique :** Fichier `install-argocd.md` ajouté au dépôt.
+- **Captures d'écran de validation :**
+  - **État `OutOfSync` / `Syncing`** : Détection de la dérive suite à la modification du code sur GitHub pour exiger 4 réplicas.
+    ![Argo CD OutOfSync](captures/Argo_CD_OutOfSync.jfif)
+  - **État `Synced`** : Réconciliation terminée et application saine avec les 4 pods en cours d'exécution.
+    ![Argo CD Synced](/captures/Argo_CD_Synced.jfif)
+
+---
+
+## 4. Temps investi
+
+- **Total cumulé :** 5 heures
+
 # Journal de bord – 25 Juillet
 
 ---
