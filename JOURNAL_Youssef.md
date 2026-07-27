@@ -1,5 +1,34 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 27 Juillet
+
+---
+
+## 1. Réalisations
+
+- _Bilan du Jalon 9 :_ Réalisation et finalisation du bilan complet du Jalon 9.
+- _Observabilité & Métriques :_ Finalisation et commit de l'endpoint `/api/metrics` pour l'application `web-admin` avec `prom-client`.
+- _Versioning du monitoring :_ Intégration au dépôt Git du tableau de bord Grafana (format JSON) et du fichier de configuration `prometheus-test.yml` pour permettre les tests d'observabilité en local.
+- _Validation de la pipeline CI/CD :_ Résolution du problème d'exécution et validation complète de la pipeline d'intégration continue.
+
+## 2. Difficultés techniques rencontrées et corrections
+
+- **Échec de la commande `npm ci` lors du build Docker dans la CI :** Lors de l'exécution de la pipeline (étape d'analyse et de construction de l'image Docker), la commande `npm ci --legacy-peer-deps` a échoué avec un `exit code 1` en raison de l'absence ou de la désynchronisation du fichier `package-lock.json`.
+  - _Correction :_ Régénération et synchronisation du fichier `package-lock.json` en local avec `npm install --legacy-peer-deps`, puis commit et push des modifications pour corriger l'étape de build dans la pipeline.
+
+## 3. Prochaines étapes
+
+- Passer la main à mon binôme Abdellah tout en restant à sa disposition pour l'aider si besoin.
+- Entamer les tâches restantes du jalon.
+
+## 4. Temps investi
+
+- **Durée totale :** 3 heures
+
+# Journal de bord – 26 Juillet
+
+_Pause de développement :_ Aucun travail de codage effectué ce jour pour motif d'engagement familial.
+
 # BILAN DU JALON 9 – DÉPLOIEMENT CONTINU AVEC GITOPS ET ARGO CD
 
 ---
