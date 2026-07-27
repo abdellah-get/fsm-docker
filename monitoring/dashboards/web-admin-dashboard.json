@@ -1,0 +1,62 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Utilisation CPU (%)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(fsm_web_admin_process_cpu_seconds_total[5m]) * 100",
+          "legendFormat": "CPU Usage (%)"
+        }
+      ]
+    },
+    {
+      "title": "Mémoire RAM Résidente (MB)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "fsm_web_admin_process_resident_memory_bytes / 1024 / 1024",
+          "legendFormat": "RAM (MiB)"
+        }
+      ]
+    },
+    {
+      "title": "Node.js Event Loop Lag (ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "fsm_web_admin_nodejs_eventloop_lag_seconds * 1000",
+          "legendFormat": "Lag (ms)"
+        }
+      ]
+    },
+    {
+      "title": "Uptime (Heures)",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "(time() - fsm_web_admin_process_start_time_seconds) / 3600",
+          "legendFormat": "Uptime (h)"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["fsm", "nextjs", "web-admin"],
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "Web Admin - Santé du Code & Performance",
+  "uid": "fsm-web-admin-health"
+}
