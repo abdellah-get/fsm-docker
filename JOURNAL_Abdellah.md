@@ -1,5 +1,72 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+# Bilan du jalon 9 : Déploiement déclaratif avec GitOps
+
+**Dates :** du 24 juillet 2026 au 25 juillet 2026
+
+**• Objectif rappelé en une phrase :**
+Piloter les déploiements Kubernetes de l'application directement depuis Git en utilisant Argo CD, afin que le dépôt devienne l'unique source de vérité et que le cluster se gère de manière autonome.
+
+**• Ce que j'ai réalisé :**
+
+- **Préparation de l'architecture GitOps :** Création d'un dossier `argocd-apps` et rédaction du manifeste déclaratif `app-fsm.yaml` liant le dépôt GitHub au cluster (namespace `jalon9`), avec activation des règles d'auto-correction (`selfHeal`) et de nettoyage (`prune`).
+- **Installation et configuration d'Argo CD :** Finalisation de l'installation sur le cluster, extraction sécurisée du mot de passe administrateur et mise en place d'un tunnel (`port-forward`) pour accéder à l'interface UI.
+- **Déploiement automatisé :** Application du manifeste initial. Argo CD a pris le relais avec succès pour lire le dépôt et synchroniser l'état désiré vers le cluster Kubernetes.
+- **Test de résilience (Self-Healing) :** Simulation d'une panne en supprimant brutalement un pod sain. Le système a parfaitement réagi en détectant l'anomalie et en recréant un nouveau pod en quelques secondes.
+
+**• Preuves (captures, journaux, liens des commits et de la démonstration) :**
+
+- Le fichier `app-fsm.yaml` poussé sur le dépôt GitHub.
+- Capture de l'interface Argo CD montrant le statut `Healthy` et `Synced` :
+  ![argocd-healthy-synced](./captures/jalon9-argocd-healthy-synced.png)
+- Capture du terminal montrant la suppression manuelle d'un pod applicatif et sa recréation automatique (Self-Healing) :
+  ![terminal-self-healing](./captures/jalon9-terminal-self-healing.png)
+- Capture du diagnostic du composant Ingress dans l'interface Argo CD lors du premier échec de synchronisation :
+  ![argocd-ingress-error](./captures/jalon9-argocd-ingress-error.png)
+
+**• Critères validés :**
+
+- [x] Un commit modifie l'état du cluster automatiquement (La configuration Git est lue par Argo CD).
+- [x] L'outil montre l'application synchronisée avec Git (Interface au vert).
+- [x] Une modification manuelle est ramenée à l'état décrit dans Git (Le pod supprimé a été recréé pour respecter le nombre de réplicas défini dans Git).
+
+**• Difficultés rencontrées et solutions :**
+
+- **Conflit de routage (Ingress) :** Lors de la première synchronisation, Argo CD a affiché un statut `Sync failed`. En fouillant dans l'interface, le problème venait de l'Ingress : un ancien fantôme traînait dans le namespace `default` (`host "_" and path "/" already defined`). J'ai débloqué la situation en supprimant manuellement cet ancien Ingress (`kubectl delete ingress fsm-app-ingress -n default`), ce qui a permis à Argo CD de terminer sa synchronisation avec succès.
+- **Instabilité des pods (CrashLoopBackOff) :** C'est mon blocage actuel. Plusieurs pods de l'application Next.js crashent de manière aléatoire. J'ai analysé les logs (`kubectl logs`), mais l'application semble démarrer correctement (seul un avertissement SSL PostgreSQL apparaît). J'ai testé la suppression des pods malades, mais le problème persiste.
+
+**• Questions en attente :**
+
+- Pourquoi Kubernetes décide-t-il de tuer ces pods applicatifs ? Mes deux hypothèses principales sont : un manque de RAM sur mon environnement WSL (entraînant un _OOMKilled_), ou une application trop lente à démarrer qui échoue aux tests des sondes de santé (_Health Probes_). L'observabilité sera la clé pour trancher.
+
+**• Temps passé et prochaines étapes :**
+
+- **Temps passé :** Environ 6h30
+- **Prochaines étapes :** Attaquer le **Jalon 10 (Observabilité et fiabilité)**. Cette étape est cruciale et tombe au moment parfait : l'installation de Prometheus et Grafana me fournira les métriques CPU/RAM exactes pour valider mes hypothèses sur les crashs des pods et stabiliser définitivement l'application.
+
+## Le 25 juillet 2026
+
+**• Ce que j'ai fait :**
+Aujourd'hui, l'objectif principal était de concrétiser notre approche GitOps avec Argo CD. Voici les étapes détaillées :
+
+- **Finalisation d'Argo CD :** J'ai vérifié que tous les pods de l'infrastructure Argo CD étaient bien passés en `Running`, puis j'ai extrait le mot de passe administrateur et configuré un tunnel (`port-forward`) pour accéder à l'interface web locale.
+- **Déploiement automatisé :** J'ai appliqué le manifeste `app-fsm.yaml`. L'interface d'Argo CD a pris le relais pour lire notre dépôt GitHub et commencer à synchroniser l'état désiré vers le cluster.
+- **Débogage réseau (Troubleshooting) :** Pendant le déploiement, j'ai fait face à un statut `Sync failed` dans Argo CD. En explorant l'arbre des ressources, j'ai isolé le problème sur le composant Ingress. Le journal d'erreur indiquait un conflit de routage (`host "_" and path "/" already defined`). J'ai débloqué la situation en identifiant et en supprimant un ancien Ingress fantôme qui traînait dans le namespace `default`.
+- **Validation du Self-Healing :** Pour prouver l'auto-réparation de l'infrastructure, j'ai procédé à un test de sabotage. J'ai volontairement supprimé un pod d'application sain. En quelques secondes, le ReplicaSet a détecté l'anomalie et recréé un pod flambant neuf, confirmant que le cluster est désormais résilient aux pannes.
+
+**• Ce qui me bloque :**
+L'avancement du projet n'est pas bloqué, mais je rencontre une instabilité au niveau des pods applicatifs qui nécessitera une investigation poussée :
+Plusieurs pods de notre application Next.js tombent aléatoirement en statut `CrashLoopBackOff`. J'ai tenté de les supprimer pour forcer un redémarrage, mais l'erreur revient. J'ai analysé les logs internes de ces pods (`kubectl logs`), mais l'application semble démarrer correctement (le seul message est un avertissement SSL lié à PostgreSQL).
+_Mes hypothèses actuelles :_ L'application se fait probablement tuer de l'extérieur par Kubernetes. Soit il s'agit d'un manque de mémoire vive (RAM) sur mon environnement WSL qui entraîne un _OOMKilled_, soit l'application est trop lente à démarrer, ce qui provoque l'échec des sondes de santé (Health Probes).
+
+**• Ce que je vais faire ensuite :**
+
+- Dresser le bilan final pour clôturer officiellement ce **Jalon 9**.
+- Enchaîner immédiatement sur le **Jalon 10 (Observabilité et fiabilité)**. Cette prochaine étape tombe à point nommé : le déploiement d'outils de monitoring (comme Prometheus et Grafana) va me donner les métriques exactes de consommation CPU/RAM de mes pods. Ce sera l'outil parfait pour confirmer mon hypothèse et résoudre définitivement ces crashs.
+
+**• Temps passé :**
+Environ 3 heures et demie (incluant le déploiement Argo CD, la résolution du conflit d'Ingress et l'analyse de logs).
+
 ## Le 24 Juillet
 
 • **Ce que j'ai fait :**
