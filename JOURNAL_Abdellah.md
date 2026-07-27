@@ -1,5 +1,19 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+## Le lundi 27 juillet
+
+• **Ce que j'ai fait :**
+Aujourd'hui, j'ai pas mal investigué sur le monitoring de notre application `fsm-app` avec Prometheus. Au départ, Prometheus ne voyait pas notre application. Après quelques recherches et tests de diagnostic sur le cluster, j'ai identifié et corrigé deux éléments manquants dans le code de notre Service : l'ajout des `labels` dans les métadonnées et le nommage du port en `http`. J'ai aussi fait l'expérience de la rigueur du GitOps : Argo CD écrasait mes tests manuels ! J'ai donc tout mis au propre et poussé les modifications sur Git.
+
+• **Ce qui me bloque :**
+Plus de point de blocage technique majeur. La subtilité venait vraiment du fait qu'il faut obligatoirement merger sur la branche `main` pour qu'Argo CD prenne en compte les changements (une simple PR ou un apply manuel ne suffit pas pour du long terme).
+
+• **Ce que je vais faire ensuite :**
+Je vais valider et merger ma Pull Request vers `main`. Ensuite, je vais surveiller l'interface de Prometheus pour confirmer que la cible `fsm-app` passe bien au vert (UP). Une fois les métriques récupérées, je pourrai sans doute passer à la création des dashboards.
+
+• **Temps passé :**
+Environ 4 heures (diagnostic Kubernetes, compréhension du comportement d'Argo CD et correction des fichiers YAML).
+
 # Bilan du jalon 9 : Déploiement déclaratif avec GitOps
 
 **Dates :** du 24 juillet 2026 au 25 juillet 2026
