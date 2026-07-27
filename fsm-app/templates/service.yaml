@@ -2,12 +2,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fsm-app-service
+  labels: # <--- AJOUTE CETTE LIGNE
+    app: fsm-app # <--- AJOUTE CETTE LIGNE
 spec:
   # C'est ici qu'on dit au Service vers quels Pods envoyer le trafic
   selector:
     app: fsm-app
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 3000 # Le port exposé par le service
       targetPort: 3000 # Le port sur lequel ton application écoute
   type: ClusterIP

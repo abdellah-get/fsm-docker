@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # On pointe directement vers le dépôt officiel de Prometheus
+    repoURL: "https://prometheus-community.github.io/helm-charts"
+    targetRevision: 61.3.1 # Version stable du chart
+    chart: kube-prometheus-stack
+    helm:
+      releaseName: prometheus
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: monitoring # ArgoCD déploiera tout dans ce namespace
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true # ArgoCD créera le namespace s'il n'existe pas
