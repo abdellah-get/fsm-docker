@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import client from "prom-client";
 
+// Force Next.js à exécuter la route dynamiquement à chaque scraping (indispensable en prod)
+export const dynamic = "force-dynamic";
+
 // Initialisation unique pour éviter les erreurs lors des rechargements (Hot Reload)
 const globalForPrometheus = globalThis as unknown as {
   prometheusInitialized?: boolean;
