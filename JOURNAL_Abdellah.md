@@ -1,5 +1,24 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+## Le mardi 28 juillet
+
+• **Ce que j'ai fait :**
+J'ai avancé et quasiment clôturé le **Jalon 10 (Observabilité et fiabilité)** :
+
+- Complété les métriques applicatives dans `web-admin` (`prom-client`, route `/api/metrics`, instrumentation de `/api/health` avec trafic / latence / erreurs), puis merge sur `main`.
+- Corrigé et appliqué le `ServiceMonitor` (`path: /api/metrics`) ; Prometheus scrape bien `fsm-app` (cibles UP sur les pods sains, métrique `fsm_http_requests_total` visible dans Graph).
+- Créé le dashboard Grafana `FSM App - Jalon 10` (trafic, latence p95, erreurs 5xx).
+- Défini un SLO (p95 < 1s) et configuré l'alerte `FsmAppHighLatency` via `PrometheusRule` ; preuve de déclenchement en état **Firing**.
+
+• **Ce qui me bloque :**
+Plus de blocage sur le jalon 10 lui-même. Point d'attention restant : 2 pods sur 4 en `connection refused` (instabilité déjà vue au jalon 9), ce qui donne un scraping `2/4 up` sans empêcher le monitoring des pods Ready.
+
+• **Ce que je vais faire ensuite :**
+Remettre le seuil d'alerte à sa valeur réaliste (`> 1`), commit/PR des fichiers d'observabilité restants, rédiger le bilan officiel du jalon 10 avec les captures, mettre le board à jour (#92, #93, #94), puis attaquer le jalon final.
+
+• **Temps passé :**
+Environ 4h30 à 5h.
+
 ## Le lundi 27 juillet
 
 • **Ce que j'ai fait :**
