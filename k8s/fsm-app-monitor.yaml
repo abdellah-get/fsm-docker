@@ -4,17 +4,15 @@ metadata:
   name: fsm-app-monitor
   namespace: monitoring
   labels:
-    # C'est ce label qui dit à ton Prometheus de prendre en compte ce fichier
     release: prometheus
 spec:
   selector:
     matchLabels:
-      # Remplace par le label exact de ton Service fsm-app (généralement app: fsm-app)
       app: fsm-app
   namespaceSelector:
     matchNames:
-      - jalon9 # Le namespace où se trouve ton application
+      - jalon9
   endpoints:
-    - port: http # Le nom du port défini dans le Service K8s de ton application (souvent 'http' ou le numéro du port comme 3000)
-      path: /metrics
+    - port: http
+      path: /api/metrics
       interval: 15s
