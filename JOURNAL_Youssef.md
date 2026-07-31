@@ -1,5 +1,66 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# Journal de bord – 31 Juillet
+
+---
+
+## 1. Réalisations
+
+- J'ai rédigé et finalisé le bilan du jalon 10.
+- J'ai entamé les premières étapes du jalon final.
+
+## 2. Difficultés techniques rencontrées et corrections
+
+- Aucune difficulté rencontrée aujourd'hui.
+
+## 3. Prochaines étapes
+
+- Terminer le jalon final.
+
+## 4. Temps investi
+
+- **Durée totale :** 2 heures
+
+# Journal de bord – 28, 29 et 30 Juillet
+
+Je n'ai pas codé durant ces trois jours pour motif de maladie.
+
+# BILAN DU JALON 10 – OBSERVABILITÉ, MÉTRIQUES ET VALIDATION CI/CD
+
+---
+
+Date : 27 juillet 2026
+
+## 1. Réalisations
+
+- **Observabilité et Métriques :** Finalisation de l'intégration de `prom-client` et mise en place opérationnelle de l'endpoint `/api/metrics` pour l'application `web-admin`.
+- **Versioning de l'infrastructure de monitoring :** Ajout au dépôt Git de la configuration nécessaire pour les tests d'observabilité en local, incluant le fichier `prometheus-test.yml` ainsi que l'export du tableau de bord Grafana au format JSON.
+- **Validation de la pipeline CI/CD :** Fiabilisation du processus de déploiement continu par la résolution des problèmes d'exécution, permettant une validation complète et réussie de la pipeline d'intégration continue.
+- **Gestion de projet :** Clôture administrative de la phase précédente avec la réalisation et la finalisation du bilan complet du Jalon 9.
+
+---
+
+## 2. Difficultés techniques rencontrées et résolues
+
+- **Échec de la commande `npm ci` lors du build Docker dans la CI :**
+  - _Problème :_ Lors de l'exécution de la pipeline (étape d'analyse et de construction de l'image Docker), le processus a échoué avec un `exit code 1`. Ce blocage était dû à l'utilisation de la commande `npm ci --legacy-peer-deps` combinée à une absence ou une désynchronisation du fichier `package-lock.json` sur le dépôt.
+  - _Résolution :_ Régénération locale et synchronisation stricte du fichier `package-lock.json` en exécutant `npm install --legacy-peer-deps`. Les correctifs ont ensuite été commités et poussés sur la branche, ce qui a permis à l'étape de build de passer au vert dans la pipeline.
+
+---
+
+## 3. Preuves et Livrables
+
+- **Dépôt Git du projet :** [Lien vers le dépôt GitHub](https://github.com/abdellah-get/fsm-docker.git)
+- **Pull Request :** [Lien vers la Pull Request](https://github.com/abdellah-get/fsm-docker/pull/97).
+- **Tableau de bord Grafana :** Capture d'écran illustrant la remontée des métriques en temps réel (Utilisation CPU, Mémoire RAM, Node.js Event Loop Lag et Uptime) depuis Prometheus.
+  ![Dashboard Grafana "Web Admin - Santé du Code & Performance"](captures/Dashboard_Grafana.jfif)
+
+---
+
+## 4. Temps investi
+
+- **Total cumulé :** 3 heures
+
 # Journal de bord – 27 Juillet
 
 ---
