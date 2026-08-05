@@ -31,3 +31,6 @@ Thumbs.db
 
 # Autoriser l'exemple d'env
 !.env.example
+
+# Fichiers verrou PowerPoint
+~$*.pptx

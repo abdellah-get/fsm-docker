@@ -1,5 +1,58 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+# Bilan du jalon final : Projet de synthèse, documentation et soutenance
+
+**Dates :** du 3 août 2026 au 5 août 2026
+
+**• Objectif rappelé en une phrase :**
+Relier l’ensemble du parcours DevOps en une chaîne cohérente, documenter le dépôt, préparer la soutenance et démontrer le fonctionnement de bout en bout (du commit à l’application surveillée).
+
+**• Ce que j’ai réalisé :**
+
+- **Nettoyage du dépôt :** retrait des secrets du tracking Git, rotation des credentials Neon, renforcement du `.gitignore`, suppression des artefacts Helm locaux inutiles.
+- **Documentation :** réécriture du `README.md` général avec schéma d’architecture (Mermaid), stack, jalons et démarrage rapide.
+- **Fiabilisation démo :** correction du secret Kubernetes / Argo (`ignoreDifferences`), remise à jour de `DATABASE_URL` sur EC2 après rotation Neon, remise en ligne du login DuckDNS.
+- **Soutenance :** préparation d’une présentation PowerPoint (12 slides) + script de démonstration live.
+- **Vérification de la chaîne :** CI GitHub Actions verte, site HTTPS, pods Kubernetes, Argo CD (`fsm-app` Synced), dashboard Grafana.
+
+**• Preuves (captures, journaux, liens des commits et de la démonstration) :**
+
+- README + architecture : dépôt `fsm-docker` (branche / PR jalon final)
+- Captures démo :
+  - `./captures/jalon-final-ci-green.png`
+  - `./captures/jalon-final-site-duckdns.png`
+  - `./captures/jalon-final-pods-running.png`
+  - (existantes) Argo / Grafana / alerte : `./captures/jalon9-*.png`, `./captures/jalon10-*.png`
+- Présentation : `./soutenance/Jalon_Final_Soutenance_FSM_Docker.pptx`
+- Site en ligne : https://fsm-app-morocco.duckdns.org/login
+- **Lien de la démonstration (vidéo / enregistrement) :** https://drive.google.com/file/d/1OTBb3u7-InK2bUVwnckeki-Ya8cX8m3d/view?usp=sharing
+
+**• Critères validés :**
+
+- [x] La démonstration complète fonctionne du début à la fin (CI → app → K8s/GitOps → observabilité).
+- [x] Les diapositives de soutenance sont prêtes (8–12 slides).
+- [x] Le dépôt est présentable (README, schéma, badges, secrets hors Git).
+
+**• Difficultés rencontrées et solutions :**
+
+- **Secrets placeholders synchronisés par Argo :** les pods CrashLoopaient après le nettoyage Git.  
+  _Solution :_ `ignoreDifferences` sur `fsm-secrets` + réinjection des vraies clés hors Git.
+- **Login DuckDNS en échec Neon :** ancien mot de passe encore présent sur EC2.  
+  _Solution :_ SSH + recréation du conteneur `app_fsm` avec la nouvelle `DATABASE_URL`.
+- **Cluster K8s inaccessible après arrêt WSL/Docker :** `connection refused` sur l’API server.  
+  _Solution :_ redémarrer Docker Desktop / le cluster kind, puis rerun `kubectl`.
+- **Clé SSH introuvable / permissions WSL :** `.pem` trop ouverte sur `/mnt/c`.  
+  _Solution :_ copier la clé vers `~/.ssh` et `chmod 400`.
+
+**• Questions en attente :**
+
+- Faut-il industrialiser les secrets avec Sealed Secrets / External Secrets pour un GitOps 100 % déclaratif ?
+
+**• Temps passé et prochaines étapes :**
+
+- **Temps passé :** environ 10–12 h sur le jalon final (nettoyage, doc, correction prod/EC2, slides, répétition démo).
+- **Prochaines étapes :** finaliser le lien de la démo ci-dessus, merger la PR `feature/jalon-final-soutenance`, mettre le board à jour, et demander la validation du encadrant via issue GitHub.
+
 # Bilan du jalon 10 : Observabilité et fiabilité
 
 **Dates :** du 27 juillet 2026 au 28 juillet 2026
