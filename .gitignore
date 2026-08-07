@@ -1,36 +1,20 @@
-﻿# Dépendances et build
+# Ignorer les dossiers de dépendances et de build à tous les niveaux
 **/node_modules/
 **/.next/
 **/out/
 **/build/
 
-# Fichiers d'environnement / secrets locaux
+# Ignorer les fichiers d'environnement secrets
 .env
 .env.local
 .env.*.local
 **/web-admin/.env*
-fsm-app/values-secret.yaml
-k8s/secret.yaml
-k8s/secret.local.yaml
 
-# Données PostgreSQL locale (Docker)
+# Ignorer les données de la base PostgreSQL locale de Docker
 db-data/
 
-# Artefacts Helm / téléchargements locaux (le chart officiel est tiré par Argo CD)
-*.tgz
-index.yaml
-get_helm.sh
-prometheus-full.yaml
-kube-prometheus-stack/
-
-# Fichiers système
+# Fichiers systèmes
 .DS_Store
 Thumbs.db
-*.log
-.vscode/
 
-# Autoriser l'exemple d'env
-!.env.example
-
-# Fichiers verrou PowerPoint
-~$*.pptx
+k8s/secret.yaml
