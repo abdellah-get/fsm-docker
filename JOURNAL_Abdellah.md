@@ -1,5 +1,133 @@
 # JOURNAL DE BORD - STAGE Wilance (Abdellah ANECLOUB)
 
+# Bilan du jalon final : Projet de synthèse, documentation et soutenance
+
+**Dates :** du 3 août 2026 au 5 août 2026
+
+**• Objectif rappelé en une phrase :**
+Relier l’ensemble du parcours DevOps en une chaîne cohérente, documenter le dépôt, préparer la soutenance et démontrer le fonctionnement de bout en bout (du commit à l’application surveillée).
+
+**• Ce que j’ai réalisé :**
+
+- **Nettoyage du dépôt :** retrait des secrets du tracking Git, rotation des credentials Neon, renforcement du `.gitignore`, suppression des artefacts Helm locaux inutiles.
+- **Documentation :** réécriture du `README.md` général avec schéma d’architecture (Mermaid), stack, jalons et démarrage rapide.
+- **Fiabilisation démo :** correction du secret Kubernetes / Argo (`ignoreDifferences`), remise à jour de `DATABASE_URL` sur EC2 après rotation Neon, remise en ligne du login DuckDNS.
+- **Soutenance :** préparation d’une présentation PowerPoint (12 slides) + script de démonstration live.
+- **Vérification de la chaîne :** CI GitHub Actions verte, site HTTPS, pods Kubernetes, Argo CD (`fsm-app` Synced), dashboard Grafana.
+
+**• Preuves (captures, journaux, liens des commits et de la démonstration) :**
+
+- README + architecture : dépôt `fsm-docker` (branche / PR jalon final)
+- Captures démo :
+  - `./captures/jalon-final-ci-green.png`
+  - `./captures/jalon-final-site-duckdns.png`
+  - `./captures/jalon-final-pods-running.png`
+  - (existantes) Argo / Grafana / alerte : `./captures/jalon9-*.png`, `./captures/jalon10-*.png`
+- Présentation : `./soutenance/Jalon_Final_Soutenance_FSM_Docker.pptx`
+- Site en ligne : https://fsm-app-morocco.duckdns.org/login
+- **Lien de la démonstration (vidéo / enregistrement) :** https://drive.google.com/file/d/1OTBb3u7-InK2bUVwnckeki-Ya8cX8m3d/view?usp=sharing
+
+**• Critères validés :**
+
+- [x] La démonstration complète fonctionne du début à la fin (CI → app → K8s/GitOps → observabilité).
+- [x] Les diapositives de soutenance sont prêtes (8–12 slides).
+- [x] Le dépôt est présentable (README, schéma, badges, secrets hors Git).
+
+**• Difficultés rencontrées et solutions :**
+
+- **Secrets placeholders synchronisés par Argo :** les pods CrashLoopaient après le nettoyage Git.  
+  _Solution :_ `ignoreDifferences` sur `fsm-secrets` + réinjection des vraies clés hors Git.
+- **Login DuckDNS en échec Neon :** ancien mot de passe encore présent sur EC2.  
+  _Solution :_ SSH + recréation du conteneur `app_fsm` avec la nouvelle `DATABASE_URL`.
+- **Cluster K8s inaccessible après arrêt WSL/Docker :** `connection refused` sur l’API server.  
+  _Solution :_ redémarrer Docker Desktop / le cluster kind, puis rerun `kubectl`.
+- **Clé SSH introuvable / permissions WSL :** `.pem` trop ouverte sur `/mnt/c`.  
+  _Solution :_ copier la clé vers `~/.ssh` et `chmod 400`.
+
+**• Questions en attente :**
+
+- Faut-il industrialiser les secrets avec Sealed Secrets / External Secrets pour un GitOps 100 % déclaratif ?
+
+**• Temps passé et prochaines étapes :**
+
+- **Temps passé :** environ 10–12 h sur le jalon final (nettoyage, doc, correction prod/EC2, slides, répétition démo).
+- **Prochaines étapes :** finaliser le lien de la démo ci-dessus, merger la PR `feature/jalon-final-soutenance`, mettre le board à jour, et demander la validation du encadrant via issue GitHub.
+
+# Bilan du jalon 10 : Observabilité et fiabilité
+
+**Dates :** du 27 juillet 2026 au 28 juillet 2026
+
+**• Objectif rappelé en une phrase :**
+Ajouter l'observabilité sur l'application `fsm-app` (métriques, Prometheus, Grafana) et poser un premier objectif de service (SLO) avec une alerte quand il n'est pas respecté.
+
+**• Ce que j'ai réalisé :**
+
+- **Métriques applicatives :** mise en place de `prom-client` dans `web-admin`, création d'un module partagé `src/lib/metrics.ts`, exposition de la route `/api/metrics`, et instrumentation de `/api/health` (trafic, latence, erreurs via `fsm_http_requests_total` et `fsm_http_request_duration_seconds`).
+- **Collecte Prometheus :** correction du `ServiceMonitor` (`k8s/fsm-app-monitor.yaml`) pour scraper `path: /api/metrics`, application sur le cluster, vérification des Targets (pods Ready en UP) et présence des métriques dans Graph.
+- **Dashboard Grafana :** création du dashboard `FSM App - Jalon 10` avec 3 panels (trafic req/s, latence p95, erreurs 5xx).
+- **SLO + alerte :** définition d'un SLO simple (p95 < 1s) et configuration d'une `PrometheusRule` (`FsmAppHighLatency`) ; démonstration du passage à l'état **Firing** lorsque le seuil n'est pas tenu.
+
+**• Preuves (captures, journaux, liens des commits et de la démonstration) :**
+
+- Capture Prometheus Targets (`fsm-app-monitor`) :
+  ![jalon10-prometheus-targets](./captures/jalon10-prometheus-targets-fsm-app.png)
+- Capture dashboard Grafana `FSM App - Jalon 10` :
+  ![jalon10-grafana-dashboard](./captures/jalon10-grafana-dashboard.png)
+- Capture alerte `FsmAppHighLatency` en Firing :
+  ![jalon10-alert-firing](./captures/jalon10-alert-fsm-high-latency-firing.png)
+- (Optionnel) Preuve locale `/api/metrics` :
+  ![jalon10-api-metrics](./captures/jalon10-api-metrics-curl.png)
+- Fichiers versionnés : `web-admin/src/lib/metrics.ts`, `web-admin/src/app/api/metrics/route.ts`, `web-admin/src/app/api/health/route.ts`, `k8s/fsm-app-monitor.yaml`, `k8s/fsm-app-alerts.yaml`.
+- PR / commits liés au jalon 10 mergés sur `main` (métriques applicatives + configuration de scraping / alerte): https://github.com/abdellah-get/fsm-docker/pull/102
+
+**• Critères validés :**
+
+- [x] L'application expose ses mesures, et un tableau de bord les affiche en direct.
+- [x] Au moins un objectif de service (SLO) est défini.
+- [x] Une alerte se déclenche quand l'objectif n'est pas tenu (preuve Firing).
+
+**• Difficultés rencontrées et solutions :**
+
+- **Métriques HTTP absentes de `/api/metrics` :** Next.js chargeait parfois deux registres `prom-client`.  
+  _Solution :_ singleton via `globalThis` dans `lib/metrics.ts` pour partager le même registre.
+- **Mauvais process sur le port 3000 en local :** les tests frappaient une autre application.  
+  _Solution :_ lancer `web-admin` sur un port dédié (ex. 3009) et tester avec `curl.exe`.
+- **ServiceMonitor initial sur `/metrics` :** path incorrect.  
+  _Solution :_ corriger en `/api/metrics`.
+- **Targets `2/4 up` :** deux pods en `connection refused` (instabilité déjà vue au jalon 9).  
+  _Solution :_ le scraping des pods Ready suffit pour valider l'observabilité ; l'instabilité des réplicas est notée comme point de fiabilité à suivre.
+- **Port-forward Prometheus coupé (`connection refused`) :** pod temporairement indisponible/reload.  
+  _Solution :_ attendre le retour Ready du pod puis relancer le `kubectl port-forward`.
+
+**• Questions en attente :**
+
+- Faut-il industrialiser le `ServiceMonitor` / `PrometheusRule` dans le chart Helm (ou une Application Argo CD dédiée), plutôt que via `kubectl apply` sur `k8s/`, pour rester 100 % GitOps ?
+- Souhaitez-vous qu'on baisse durablement `replicaCount` pour stabiliser les Targets à `2/2 up` avant la soutenance ?
+
+**• Temps passé et prochaines étapes :**
+
+- **Temps passé :** environ 8h à 9h au total sur le jalon 10 (préparation/diagnostic + finalisation métriques, scraping, dashboard, SLO/alerte).
+- **Prochaines étapes :** enchaîner sur le **jalon final** (synthèse, documentation, schéma d'architecture et préparation de la soutenance).
+
+## Le mardi 28 juillet
+
+• **Ce que j'ai fait :**
+J'ai avancé et quasiment clôturé le **Jalon 10 (Observabilité et fiabilité)** :
+
+- Complété les métriques applicatives dans `web-admin` (`prom-client`, route `/api/metrics`, instrumentation de `/api/health` avec trafic / latence / erreurs), puis merge sur `main`.
+- Corrigé et appliqué le `ServiceMonitor` (`path: /api/metrics`) ; Prometheus scrape bien `fsm-app` (cibles UP sur les pods sains, métrique `fsm_http_requests_total` visible dans Graph).
+- Créé le dashboard Grafana `FSM App - Jalon 10` (trafic, latence p95, erreurs 5xx).
+- Défini un SLO (p95 < 1s) et configuré l'alerte `FsmAppHighLatency` via `PrometheusRule` ; preuve de déclenchement en état **Firing**.
+
+• **Ce qui me bloque :**
+Plus de blocage sur le jalon 10 lui-même. Point d'attention restant : 2 pods sur 4 en `connection refused` (instabilité déjà vue au jalon 9), ce qui donne un scraping `2/4 up` sans empêcher le monitoring des pods Ready.
+
+• **Ce que je vais faire ensuite :**
+Remettre le seuil d'alerte à sa valeur réaliste (`> 1`), commit/PR des fichiers d'observabilité restants, rédiger le bilan officiel du jalon 10 avec les captures, mettre le board à jour (#92, #93, #94), puis attaquer le jalon final.
+
+• **Temps passé :**
+Environ 4h30 à 5h.
+
 ## Le lundi 27 juillet
 
 • **Ce que j'ai fait :**

@@ -1,5 +1,42 @@
 # JOURNAL DE BORD – STAGE Wilance Ouchen Youssef
 
+# BILAN DU JALON FINAL – PROJET DE SYNTHÈSE, DOCUMENTATION ET SOUTENANCE
+
+---
+
+**Dates :** À partir du 31 Juillet 2026
+
+**• Objectif rappelé en une phrase :**
+Relier l’ensemble du parcours DevOps en une chaîne cohérente, documenter le dépôt, préparer la soutenance et démontrer le fonctionnement de bout en bout .
+
+**• Ce que j’ai réalisé :**
+
+- **Documentation et synthèse :** Rédaction, centralisation et finalisation de tous les bilans de jalons.
+- **Fiabilisation de l'infrastructure :** Validation complète et réussie de la pipeline d'intégration continue CI/CD après résolution des derniers échecs d'exécution.
+- **Préparation de la soutenance :** Entame des premières étapes du jalon final, incluant la structuration du scénario de démonstration et l'élaboration des diapositives de présentation basées sur mon journal de bord.
+- **Validation du cycle de vie complet :** Garantie que la chaîne fonctionne de la modification du code sur Git, jusqu'au déploiement GitOps (Argo CD) et à l'observabilité (Grafana/Prometheus).
+
+**• Preuves (captures, journaux, liens des commits et de la démonstration) :**
+
+- **Dépôt Git du projet :** [Lien vers le dépôt GitHub](https://github.com/abdellah-get/fsm-docker.git)
+- **Dépôt Git de l'infrastructure :** [Lien vers le dépôt GitHub](https://github.com/abdellah-get/fsm-infrastructure.git)
+- **Présentation :** `soutenance/Youssef_presentation_stage.pptx`
+- **Lien de la démonstration (vidéo / enregistrement) :** https://drive.google.com/file/d/1SWnIk3zm1wtVJCpbr9_upVzYnX4YyYtc/view?usp=drive_link
+
+**• Critères validés :**
+
+- La démonstration complète fonctionne du début à la fin (CI → app → K8s/GitOps → observabilité).
+- Les diapositives de soutenance sont prêtes.
+- Le dépôt est présentable .
+
+**• Questions en attente :**
+
+- Aucune question pour le moment.
+
+**• Temps passé et prochaines étapes :**
+
+- **Temps passé :** 7 heures
+
 # Journal de bord – 31 Juillet
 
 ---

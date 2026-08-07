@@ -26,3 +26,10 @@ resources:
   limits:
     cpu: "250m"
     memory: "256Mi"
+
+# Secrets applicatifs (PLACEHOLDERS uniquement dans Git)
+# Pour le cluster : copie values-secret.yaml.example -> values-secret.yaml
+# (fichier gitignoré) ou passe les valeurs via --set / secrets Argo CD.
+secrets:
+  dbUrl: "DATABASE_URL_HERE"
+  authSecret: "AUTH_SECRET_HERE"
